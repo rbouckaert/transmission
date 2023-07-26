@@ -3,6 +3,7 @@ package transmission.distribution;
 
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -20,7 +21,6 @@ import beast.base.inference.State;
 import beast.base.inference.parameter.IntegerParameter;
 import beast.base.inference.parameter.RealParameter;
 import beast.base.util.Binomial;
-import beast.base.util.HeapSort;
 
 @Description("Likelihood of a transmission tree")
 public class TransmissionTreeLikelihood extends TreeDistribution {
@@ -78,12 +78,23 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     }
     
     
-    private double calculateCoalescent() {
+    public double calculateCoalescent() {
 		List<IntervalList> segments = collectSegments();
 		double logP = 0;
 		for (IntervalList intervals : segments) {
 			if (intervals != null) {
 				logP += calculateCoalescent(intervals, 0.0);
+			}
+		}
+		return logP;
+	}
+
+    public List<Double> calculateCoalescents() {
+		List<IntervalList> segments = collectSegments();
+		List<Double> logP = new ArrayList<>();
+		for (IntervalList intervals : segments) {
+			if (intervals != null) {
+				logP.add(calculateCoalescent(intervals, 0.0));
 			}
 		}
 		return logP;
@@ -167,17 +178,13 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 			double multifurcationLimit = 0.0;
 			int nodeCount = events.size();
 			
-	        int [] indices = new int[nodeCount];
-
-	        HeapSort.sort(times, indices);
-
 	        if (intervals == null || intervals.length != nodeCount) {
 	            intervals = new double[nodeCount];
 	            lineageCounts = new int[nodeCount];
 	        }
 
 	        // start is the time of the first tip
-	        double start = times.get(indices[0]);
+	        double start = times.get(0);
 	        int numLines = 0;
 	        int nodeNo = 0;
 	        intervalCount = 0;
@@ -186,25 +193,18 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	            int lineagesRemoved = 0;
 	            int lineagesAdded = 0;
 
-	            double finish = times.get(indices[nodeNo]);
+	            double finish = times.get(nodeNo);
 	            double next;
 
 	            do {
-	                final int childIndex = indices[nodeNo];
-	                final int childCount = events.get(childIndex).equals(IntervalType.COALESCENT) ? 2 : 0;
+	                final int childIndex = nodeNo;
+	                final IntervalType type = events.get(childIndex);
 	                // don't use nodeNo from here on in do loop
 	                nodeNo += 1;
-	                if (childCount == 0) {
-	                    lineagesAdded += 1;
+	                if (type == IntervalType.SAMPLE) {
+	                    lineagesAdded++;
 	                } else {
-	                    lineagesRemoved += (childCount - 1);
-
-	                    // record removed lineages
-	                    final Node parent = tree.getNode(childIndex);
-	                    //assert childCounts[indices[nodeNo]] == beast.tree.getChildCount(parent);
-	                    for (int j = 0; j < childCount; j++) {
-	                        Node child = j == 0 ? parent.getLeft() : parent.getRight();
-	                    }
+	                    lineagesRemoved++;
 
 	                    // no mix of removed lineages when 0 th
 	                    if (multifurcationLimit == 0.0) {
@@ -213,7 +213,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	                }
 
 	                if (nodeNo < nodeCount) {
-	                    next = times.get(indices[nodeNo]);
+	                    next = times.get(nodeNo);
 	                } else break;
 	            } while (Math.abs(next - finish) <= multifurcationLimit);
 
@@ -242,6 +242,29 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	            numLines -= lineagesRemoved;
 	        }
 		}
+
+		public void addEvent(double time, IntervalType type) {
+			if (times.size() == 0 || times.get(times.size()-1) < time) {
+				times.add(time);
+				events.add(type);			
+			} else {
+				int index = Collections.binarySearch(times, time);
+				times.add(index, time);
+				events.add(index, type);
+			}
+		}
+		
+		@Override
+		public String toString() {
+			if (times == null) {
+				return "empty SegmentIntervalList";
+			}
+			String str = "";
+			for (int i = 0;i < times.size(); i++) {
+				str += "(" + lineageCounts[i] + " " + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
+			}
+			return str;
+		}
     	
     }
     
@@ -261,17 +284,18 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 			SegmentIntervalList intervals = (SegmentIntervalList) segments.get(colour);
 			
 			// add node event
-			intervals.times.add(node.getHeight());
-			intervals.events.add(node.isLeaf() ? IntervalType.SAMPLE : IntervalType.COALESCENT);
+			intervals.addEvent(node.getHeight(), node.isLeaf() ? IntervalType.SAMPLE : IntervalType.COALESCENT);
 			if (!node.isRoot()) {
 				int parentNr = node.getParent().getNr();
 				int parentColour = colourAtBase.getValue(parentNr);
 				if (colour != parentColour) {
 					// add sampling event at top of block
+					if (segments.get(parentColour) == null) {
+						segments.set(parentColour, new SegmentIntervalList());
+					}
 					intervals = (SegmentIntervalList) segments.get(parentColour);
 					double h = node.getHeight() + blockEndFraction.getValue(node.getNr()) * (node.getParent().getHeight() - node.getHeight());
-					intervals.times.add(h);
-					intervals.events.add(IntervalType.SAMPLE);
+					intervals.addEvent(h, IntervalType.SAMPLE);
 				}
 			}
 		}

@@ -4,8 +4,10 @@ package transmission.distribution;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import beast.base.core.Description;
 import beast.base.core.Input;
@@ -36,6 +38,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     private IntegerParameter blockCount;
     private IntegerParameter colourAtBase;
     private PopulationFunction popSizeFunction;
+    private Validator validator;
     
     @Override
     public void initAndValidate() {
@@ -68,11 +71,18 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	}
     	
     	popSizeFunction = popSizeInput.get();
+    	
+    	validator = new Validator(tree, colourAtBase, blockCount);
     }
     
     @Override
     public double calculateLogP() {
     	logP = 0;
+    	if (!validator.isValid()) {
+    		logP = Double.NEGATIVE_INFINITY;
+    		return logP;
+    	}
+    	
     	logP = calculateCoalescent();
     	return logP;
     }
@@ -354,6 +364,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
         return logL;
   	}
 
+	
+
+	
 	@Override
     public List<String> getConditions() {
         List<String> conditions = new ArrayList<>();

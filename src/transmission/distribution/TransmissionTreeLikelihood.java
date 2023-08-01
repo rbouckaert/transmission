@@ -4,12 +4,14 @@ package transmission.distribution;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
+
+import org.apache.commons.math.distribution.WeibullDistribution;
+import org.apache.commons.math.distribution.WeibullDistributionImpl;
 
 import beast.base.core.Description;
+import beast.base.core.Function;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
 import beast.base.core.Log;
@@ -32,6 +34,17 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     final public Input<IntegerParameter> colourInput = new Input<>("colour", "colour of the base of the branch", Validate.REQUIRED);
     final public Input<PopulationFunction> popSizeInput = new Input<>("populationModel", "A population size model", Validate.REQUIRED);
 
+    final public Input<RealParameter> tauInfInput = new Input<>("tauInf", "time of first infection", Validate.REQUIRED);
+
+    final public Input<Function> A_trInput = new Input<>("A_tr", "scale of tranmission process", new Constant("1.0"));
+    final public Input<RealParameter> p_trInput = new Input<>("p_tr", "shape parameter of transmission distribution", Validate.REQUIRED);
+    final public Input<RealParameter> lambda_trInput = new Input<>("lambda_tr", "rate for the Poisson process of transmissions", Validate.REQUIRED);
+    
+    final public Input<Function> A_sInput = new Input<>("A_s", "scale of sampling process", new Constant("1.0"));
+    final public Input<RealParameter> p_sInput = new Input<>("p_s", "shape parameter of sampling distribution", Validate.REQUIRED);
+    final public Input<RealParameter> lambda_sInput = new Input<>("lambda_s", "rate for the Poisson process of sampling", Validate.REQUIRED);
+
+    
     private Tree tree;
     private RealParameter blockStartFraction;
     private RealParameter blockEndFraction;
@@ -40,6 +53,18 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     private PopulationFunction popSizeFunction;
     private Validator validator;
     
+    // hazard functions for sampling and transmission respectively
+    private WeibullDistribution samplingDist = new WeibullDistributionImpl(1, 1);
+    private WeibullDistribution transmissionDist = new WeibullDistributionImpl(1, 1);
+
+	private RealParameter tauInf;
+	private Function A_tr;
+	private RealParameter p_tr;
+	private RealParameter lambda_tr;
+	private Function A_s;
+	private RealParameter p_s;
+	private RealParameter lambda_s;
+
     @Override
     public void initAndValidate() {
     	tree = (Tree) treeInput.get();
@@ -53,29 +78,54 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	blockCount = blockCountInput.get();
     	colourAtBase = colourInput.get();
     	
-    	if (blockStartFraction.getDimension() != n) {
-    		blockStartFraction.setDimension(n);
-    		Log.warning("Setting dimension of parameter " + blockStartFraction.getID() + " to " + n);
-    	}
-    	if (blockEndFraction.getDimension() != n) {
-    		blockEndFraction.setDimension(n);
-    		Log.warning("Setting dimension of parameter " + blockEndFraction.getID() + " to " + n);
-    	}
+    	sanityCheck(blockStartFraction, n);
+    	sanityCheck(blockEndFraction, n);
+
     	if (blockCount.getDimension() != n) {
     		blockCount.setDimension(n);
-    		Log.warning("Setting dimension of parameter " + blockCount.getID() + " to " + n);
+    		Log.warning("WARNING: Setting dimension of parameter " + blockCount.getID() + " to " + n);
     	}
+		if (blockCount.getLower() < 0) {
+			blockCount.setLower(0);
+    		Log.warning("WARNING: Setting lower bound of parameter " + blockCount.getID() + " to 0");
+		}
+		
     	if (colourAtBase.getDimension() != n) {
     		colourAtBase.setDimension(n);
-    		Log.warning("Setting dimension of parameter " + colourAtBase.getID() + " to " + n);
+    		Log.warning("WARNING: Setting dimension of parameter " + colourAtBase.getID() + " to " + n);
     	}
     	
     	popSizeFunction = popSizeInput.get();
     	
     	validator = new Validator(tree, colourAtBase, blockCount);
+    	
+
+		tauInf = tauInfInput.get();
+		A_tr = A_trInput.get();
+		p_tr = p_trInput.get();
+		lambda_tr = lambda_trInput.get();
+		A_s = A_sInput.get();
+		p_s = p_sInput.get();
+		lambda_s = lambda_sInput.get();
+    	
     }
     
-    @Override
+    private void sanityCheck(RealParameter blockFraction, int n) {
+    	if (blockFraction.getDimension() != n) {
+    		blockFraction.setDimension(n);
+    		Log.warning("WARNING: Setting dimension of parameter " + blockFraction.getID() + " to " + n);
+    	}
+    	if (blockFraction.getLower() < 0) {
+    		blockFraction.setLower(0.0);
+    		Log.warning("WARNING: Setting lower bound of parameter " + blockFraction.getID() + " to 0");
+    	}
+    	if (blockFraction.getUpper() > 1) {
+    		blockFraction.setUpper(1.0);
+    		Log.warning("WARNING: Setting upper bound of parameter " + blockFraction.getID() + " to 1");
+    	}
+	}
+
+	@Override
     public double calculateLogP() {
     	logP = 0;
     	if (!validator.isValid()) {
@@ -84,11 +134,84 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	}
     	
     	logP = calculateCoalescent();
+    	logP += calcTransmissionLikelihood();
     	return logP;
     }
     
     
-    public double calculateCoalescent() {
+    private double calcTransmissionLikelihood() {
+    	samplingDist = new WeibullDistributionImpl(p_sInput.get().getValue(), 1.0 / lambda_sInput.get().getValue());
+    	transmissionDist = new WeibullDistributionImpl(p_trInput.get().getValue(), 1.0 / lambda_trInput.get().getValue());
+    	
+    	double logP = 0;
+    	int n = tree.getLeafNodeCount();
+    	Node [] nodes = tree.getNodesAsArray();
+		// contribution of sampled cases
+    	for (int i = 0; i < n; i++) {
+			// contribution of not being sampled
+    		logP += logh_s(t, d) + logS_s(t, d);
+			// contribution of causing infections
+			TODO
+    	}
+
+    	// contribution of unsampled cases
+    	for (int i = n; i < tree.getNodeCount(); i++) {
+    		if (colourAtBase.getValue(i) > n) {
+    			// contribution of not being sampled
+    			logP += logS_s(t, d);
+    			// contribution of causing infections
+    			TODO
+    		}
+    	}
+    	
+    	// contribution of cases in blocks
+    	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
+    		if (blockCount.getValue(i) > 0) {
+    			
+    			// contribution of not being sampled
+    			double branchlength = nodes[i].getLength();
+    			double start = nodes[i].getHeight() + branchlength * blockStartFraction.getValue(i);
+    			double end   = nodes[i].getHeight() + branchlength * blockEndFraction.getValue(i);
+    			int blocks = blockCount.getValue(i);
+    			
+    			double t = start;
+    			double delta = (end - start) / blocks;
+    			for (int j = 0; j < blocks; j++) {
+    				logP += logS_s(t, t + delta);
+    				t = t + delta;
+    			}
+    			
+    			// contribution of causing infections Poisson model with rate lambda_tr
+    			double tau = end - start;
+    			logP += blocks * (Math.log(lambda_tr.getValue() * tau));
+    			for (int j = 2; j <= blocks; j++) {
+    				logP -= Math.log(j);
+    			}
+    			logP += lambda_tr.getValue() * tau;
+    			logP -= Math.log(1.0 - Math.exp(lambda_tr.getValue() * tau));
+    			
+    			
+    		} else  if (colourAtBase.getValue(i) != colourAtBase.getValue(nodes[i].getParent().getNr())) {
+    			// blockCount[i] == 0 but parent colour differs from base colour
+    			// TODO: confirm there is no contribution ???
+    		}
+    	}
+    	
+		return logP;
+	}
+    
+    private double logS_tr(double t, double d) {
+    	// S_tr = exp(−\int_0^t h^tr(s, d(s))ds) where d(s) = s + t^inf
+    }    
+    
+    private double logS_s(double t, double d) {
+    	// S_s = exp
+    }
+    
+    private double logh_s(double t, double d) {
+    }
+    
+	public double calculateCoalescent() {
 		List<IntervalList> segments = collectSegments();
 		double logP = 0;
 		for (IntervalList intervals : segments) {

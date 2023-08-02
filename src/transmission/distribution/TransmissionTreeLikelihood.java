@@ -146,21 +146,50 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	double logP = 0;
     	int n = tree.getLeafNodeCount();
     	Node [] nodes = tree.getNodesAsArray();
+    	if (segments == null) {
+    		segments = collectSegments();
+    	}
+
 		// contribution of sampled cases
     	for (int i = 0; i < n; i++) {
 			// contribution of not being sampled
-    		logP += logh_s(t, d) + logS_s(t, d);
+    		SegmentIntervalList intervals = segments.get(i);
+    		double start = intervals.times.get(intervals.times.size() - 1);
+    		double end = intervals.times.get(0);
+    		double tau = start - end;
+    		logP += logh_s(tau, d) + logS_s(tau, d);
 			// contribution of causing infections
-			TODO
+    		logP +=  logS_tr(tau, d);
+    		// further contribution below
     	}
 
     	// contribution of unsampled cases
     	for (int i = n; i < tree.getNodeCount(); i++) {
     		if (colourAtBase.getValue(i) > n) {
     			// contribution of not being sampled
-    			logP += logS_s(t, d);
+        		SegmentIntervalList intervals = segments.get(i);
+        		double start = intervals.times.get(intervals.times.size() - 1);
+    			logP += logS_s(start, d);
     			// contribution of causing infections
-    			TODO
+        		double end = intervals.times.get(0);
+        		double tau = start - end;
+        		logP +=  logS_tr(tau, d);
+        		// further contribution below
+    		}
+    	}
+    	
+		// further contribution of causing infections
+    	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
+    		int baseColour = colourAtBase.getValue(i);
+    		Node node = nodes[i];
+    		int parent = nodes[i].getParent().getNr();
+    		int parentColour = colourAtBase.getValue(parent);
+    		if (baseColour != parentColour) {
+    			List<Double> times = segments.get(parent).times;
+    			double t_baseColour_parentColour = times.get(times.size() - 1);
+    			double tInf = segments.get(parent).times.get(0);
+    			double tau = tInf - t_baseColour_parentColour;
+    			logP += logh_tr(tau, d);
     		}
     	}
     	
@@ -202,17 +231,30 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     
     private double logS_tr(double t, double d) {
     	// S_tr = exp(−\int_0^t h^tr(s, d(s))ds) where d(s) = s + t^inf
+    	// TODO: implement
+    	return 0;
     }    
     
     private double logS_s(double t, double d) {
     	// S_s = exp
+    	// TODO: implement
+    	return 0;
     }
     
     private double logh_s(double t, double d) {
+    	// TODO: implement
+    	return 0;
     }
     
-	public double calculateCoalescent() {
-		List<IntervalList> segments = collectSegments();
+    private double logh_tr(double t, double d) {
+    	// TODO: implement
+    	return 0;
+    }
+
+    private List<SegmentIntervalList> segments;
+
+    public double calculateCoalescent() {
+		segments = collectSegments();
 		double logP = 0;
 		for (IntervalList intervals : segments) {
 			if (intervals != null) {
@@ -223,7 +265,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	}
 
     public List<Double> calculateCoalescents() {
-		List<IntervalList> segments = collectSegments();
+		segments = collectSegments();
 		List<Double> logP = new ArrayList<>();
 		for (IntervalList intervals : segments) {
 			if (intervals != null) {
@@ -293,7 +335,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
 		@Override
 		public double getTotalDuration() {
-			throw new RuntimeException("Not implemented yet");
+			return times.get(times.size() - 1) - times.get(0);
 		}
 
 		@Override
@@ -401,8 +443,8 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	
     }
     
-	private List<IntervalList> collectSegments() {
-		List<IntervalList> segments = new ArrayList<>();
+	private List<SegmentIntervalList> collectSegments() {
+		List<SegmentIntervalList> segments = new ArrayList<>();
 		int nodeCount = tree.getNodeCount();
 		for (int i = 0; i < nodeCount; i++) {
 			segments.add(null);

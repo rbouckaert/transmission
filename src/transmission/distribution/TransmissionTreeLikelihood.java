@@ -7,11 +7,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.commons.math.distribution.WeibullDistribution;
-import org.apache.commons.math.distribution.WeibullDistributionImpl;
 
 import beast.base.core.Description;
-import beast.base.core.Function;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
 import beast.base.core.Log;
@@ -34,16 +31,15 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     final public Input<IntegerParameter> colourInput = new Input<>("colour", "colour of the base of the branch", Validate.REQUIRED);
     final public Input<PopulationFunction> popSizeInput = new Input<>("populationModel", "A population size model", Validate.REQUIRED);
 
-    final public Input<RealParameter> tauInfInput = new Input<>("tauInf", "time of first infection", Validate.REQUIRED);
-
-    final public Input<Function> A_trInput = new Input<>("A_tr", "scale of tranmission process", new Constant("1.0"));
-    final public Input<RealParameter> p_trInput = new Input<>("p_tr", "shape parameter of transmission distribution", Validate.REQUIRED);
-    final public Input<RealParameter> lambda_trInput = new Input<>("lambda_tr", "rate for the Poisson process of transmissions", Validate.REQUIRED);
+    final public Input<RealParameter> endTimeInput = new Input<>("endTime", "time at which the study finished", Validate.REQUIRED);
+    final public Input<RealParameter> lambdaTrInput = new Input<>("lambda", "lambda parameter of Poisson process", Validate.REQUIRED);
     
-    final public Input<Function> A_sInput = new Input<>("A_s", "scale of sampling process", new Constant("1.0"));
-    final public Input<RealParameter> p_sInput = new Input<>("p_s", "shape parameter of sampling distribution", Validate.REQUIRED);
-    final public Input<RealParameter> lambda_sInput = new Input<>("lambda_s", "rate for the Poisson process of sampling", Validate.REQUIRED);
-
+    final public Input<HazardFunction> samplingHazardInput = new Input<>("samplingHazard", "determines the hazard of being sampled", Validate.REQUIRED);
+    final public Input<HazardFunction> transmissionHazardInput = new Input<>("transmissionHazard", "determines the hazard of transmitting an infection", Validate.REQUIRED);
+    
+    
+    
+    
     
     private Tree tree;
     private RealParameter blockStartFraction;
@@ -54,17 +50,12 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     private Validator validator;
     
     // hazard functions for sampling and transmission respectively
-    private WeibullDistribution samplingDist = new WeibullDistributionImpl(1, 1);
-    private WeibullDistribution transmissionDist = new WeibullDistributionImpl(1, 1);
 
-	private RealParameter tauInf;
-	private Function A_tr;
-	private RealParameter p_tr;
-	private RealParameter lambda_tr;
-	private Function A_s;
-	private RealParameter p_s;
-	private RealParameter lambda_s;
-
+	private RealParameter endTime;
+    private RealParameter lambda_tr;
+	private HazardFunction samplingHazard;
+	private HazardFunction transmissionHazard;
+	
     @Override
     public void initAndValidate() {
     	tree = (Tree) treeInput.get();
@@ -100,14 +91,10 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	validator = new Validator(tree, colourAtBase, blockCount);
     	
 
-		tauInf = tauInfInput.get();
-		A_tr = A_trInput.get();
-		p_tr = p_trInput.get();
-		lambda_tr = lambda_trInput.get();
-		A_s = A_sInput.get();
-		p_s = p_sInput.get();
-		lambda_s = lambda_sInput.get();
-    	
+    	endTime = endTimeInput.get();
+		lambda_tr = lambdaTrInput.get();
+		samplingHazard = samplingHazardInput.get();
+		transmissionHazard = transmissionHazardInput.get();
     }
     
     private void sanityCheck(RealParameter blockFraction, int n) {
@@ -140,9 +127,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     
     
     private double calcTransmissionLikelihood() {
-    	samplingDist = new WeibullDistributionImpl(p_sInput.get().getValue(), 1.0 / lambda_sInput.get().getValue());
-    	transmissionDist = new WeibullDistributionImpl(p_trInput.get().getValue(), 1.0 / lambda_trInput.get().getValue());
-    	
+    	double d = endTime.getArrayValue();
     	double logP = 0;
     	int n = tree.getLeafNodeCount();
     	Node [] nodes = tree.getNodesAsArray();
@@ -230,25 +215,19 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	}
     
     private double logS_tr(double t, double d) {
-    	// S_tr = exp(−\int_0^t h^tr(s, d(s))ds) where d(s) = s + t^inf
-    	// TODO: implement
-    	return 0;
+    	return samplingHazard.logTr(t, d);
     }    
     
     private double logS_s(double t, double d) {
-    	// S_s = exp
-    	// TODO: implement
-    	return 0;
+    	return samplingHazard.logS(t, d);
     }
     
     private double logh_s(double t, double d) {
-    	// TODO: implement
-    	return 0;
+    	return transmissionHazard.logS(t, d);
     }
     
     private double logh_tr(double t, double d) {
-    	// TODO: implement
-    	return 0;
+    	return transmissionHazard.logTr(t, d);
     }
 
     private List<SegmentIntervalList> segments;

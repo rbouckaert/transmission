@@ -13,6 +13,8 @@ import beast.base.evolution.tree.coalescent.ConstantPopulation;
 import beast.base.inference.parameter.IntegerParameter;
 import beast.base.inference.parameter.RealParameter;
 import test.beast.BEASTTestCase;
+import transmission.distribution.GammaHazardFunction;
+import transmission.distribution.HazardFunction;
 import transmission.distribution.TransmissionTreeLikelihood;
 
 
@@ -40,6 +42,11 @@ public class CoalescentTest extends BEASTTestCase {
         IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 4, "value", 0);
         IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 4, "value", 0);
         
+        HazardFunction samplingHazard = new GammaHazardFunction();
+        samplingHazard.initByName("C", "1.0", "shape", "2.5", "rate", "10.0");
+        
+        HazardFunction transmissionHazard = new GammaHazardFunction();
+        transmissionHazard.initByName("C", "1.5", "shape", "2.5", "rate", "10.0");
         
         TransmissionTreeLikelihood coal = new TransmissionTreeLikelihood();
         coal.initByName(
@@ -48,7 +55,11 @@ public class CoalescentTest extends BEASTTestCase {
         		"blockstart", blockStart, 
         		"blockend", blockEnd, 
         		"blockcount", blockcount, 
-        		"colour", colour);
+        		"colour", colour,
+        		"endTime", "0.0",
+        		"samplingHazard", samplingHazard,
+        		"transmissionHazard", transmissionHazard,
+        		"lambda", "1.0");
 
         double logL = coal.calculateCoalescent();
 
@@ -71,7 +82,11 @@ public class CoalescentTest extends BEASTTestCase {
         		"blockstart", blockStart, 
         		"blockend", blockEnd, 
         		"blockcount", blockcount, 
-        		"colour", colour);
+        		"colour", colour,
+        		"endTime", "0.0",
+        		"samplingHazard", samplingHazard,
+        		"transmissionHazard", transmissionHazard,
+        		"lambda", "1.0");
 
         List<Double> logLs = coal.calculateCoalescents();
 

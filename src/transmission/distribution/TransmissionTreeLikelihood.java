@@ -126,7 +126,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     }
     
     
-    private double calcTransmissionLikelihood() {
+	public double calcTransmissionLikelihood() {
     	double d = endTime.getArrayValue();
     	double logP = 0;
     	int n = tree.getLeafNodeCount();
@@ -403,6 +403,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 				events.add(type);			
 			} else {
 				int index = Collections.binarySearch(times, time);
+				if (index < 0) {
+					index = -index - 1;
+				}
 				times.add(index, time);
 				events.add(index, type);
 			}
@@ -414,8 +417,14 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 				return "empty SegmentIntervalList";
 			}
 			String str = "";
-			for (int i = 0;i < times.size(); i++) {
-				str += "(" + lineageCounts[i] + " " + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
+			if (lineageCounts == null) {
+				for (int i = 0;i < times.size(); i++) {
+					str += "(" + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
+				}
+			} else {
+				for (int i = 0;i < times.size(); i++) {
+					str += "(" + lineageCounts[i] + " " + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
+				}
 			}
 			return str;
 		}
@@ -428,13 +437,17 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 		for (int i = 0; i < nodeCount; i++) {
 			segments.add(null);
 		}
-		
+
 		for (int i =  0; i < nodeCount; i++) {
-			Node node = tree.getNode(i);
 			int colour = colourAtBase.getValue(i);
 			if (segments.get(colour) == null) {
 				segments.set(colour, new SegmentIntervalList());
 			}
+		}
+		
+		for (int i =  0; i < nodeCount; i++) {
+			int colour = colourAtBase.getValue(i);
+			Node node = tree.getNode(i);
 			SegmentIntervalList intervals = (SegmentIntervalList) segments.get(colour);
 			
 			// add node event
@@ -444,9 +457,6 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 				int parentColour = colourAtBase.getValue(parentNr);
 				if (colour != parentColour) {
 					// add sampling event at top of block
-					if (segments.get(parentColour) == null) {
-						segments.set(parentColour, new SegmentIntervalList());
-					}
 					intervals = (SegmentIntervalList) segments.get(parentColour);
 					double h = node.getHeight() + blockEndFraction.getValue(node.getNr()) * (node.getParent().getHeight() - node.getHeight());
 					intervals.addEvent(h, IntervalType.SAMPLE);

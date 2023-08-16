@@ -7,6 +7,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.commons.math.distribution.PoissonDistribution;
+import org.apache.commons.math.distribution.PoissonDistributionImpl;
 
 import beast.base.core.Description;
 import beast.base.core.Input;
@@ -69,21 +71,21 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	blockCount = blockCountInput.get();
     	colourAtBase = colourInput.get();
     	
-    	sanityCheck(blockStartFraction, n);
-    	sanityCheck(blockEndFraction, n);
+    	sanityCheck(blockStartFraction, n , "blockStart");
+    	sanityCheck(blockEndFraction, n, "blockEnd");
 
     	if (blockCount.getDimension() != n) {
     		blockCount.setDimension(n);
-    		Log.warning("WARNING: Setting dimension of parameter " + blockCount.getID() + " to " + n);
+    		Log.warning("WARNING: Setting dimension of blockCount parameter " + blockCount.getID() + " to " + n);
     	}
 		if (blockCount.getLower() < 0) {
 			blockCount.setLower(0);
-    		Log.warning("WARNING: Setting lower bound of parameter " + blockCount.getID() + " to 0");
+    		Log.warning("WARNING: Setting lower bound of blockCount parameter " + blockCount.getID() + " to 0");
 		}
 		
     	if (colourAtBase.getDimension() != n) {
     		colourAtBase.setDimension(n);
-    		Log.warning("WARNING: Setting dimension of parameter " + colourAtBase.getID() + " to " + n);
+    		Log.warning("WARNING: Setting dimension of colourAtBase parameter " + colourAtBase.getID() + " to " + n);
     	}
     	
     	popSizeFunction = popSizeInput.get();
@@ -97,18 +99,18 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 		transmissionHazard = transmissionHazardInput.get();
     }
     
-    private void sanityCheck(RealParameter blockFraction, int n) {
+    private void sanityCheck(RealParameter blockFraction, int n, String paramName) {
     	if (blockFraction.getDimension() != n) {
     		blockFraction.setDimension(n);
-    		Log.warning("WARNING: Setting dimension of parameter " + blockFraction.getID() + " to " + n);
+    		Log.warning("WARNING: Setting dimension of "  + paramName + " parameter " + blockFraction.getID() + " to " + n);
     	}
     	if (blockFraction.getLower() < 0) {
     		blockFraction.setLower(0.0);
-    		Log.warning("WARNING: Setting lower bound of parameter " + blockFraction.getID() + " to 0");
+    		Log.warning("WARNING: Setting lower bound of "  + paramName + " parameter " + blockFraction.getID() + " to 0");
     	}
     	if (blockFraction.getUpper() > 1) {
     		blockFraction.setUpper(1.0);
-    		Log.warning("WARNING: Setting upper bound of parameter " + blockFraction.getID() + " to 1");
+    		Log.warning("WARNING: Setting upper bound of  "  + paramName + " parameter " + blockFraction.getID() + " to 1");
     	}
 	}
 
@@ -166,7 +168,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		if (baseColour != parentColour) {
     			double tInf0 = segments.get(parent).birthTime;
     			Node node = nodes[i];
-    			double tInf1 = node.getHeight() + node.getLength() * blockStartFraction.getArrayValue(node.getNr());
+    			double tInf1 = node.getHeight() + node.getLength() * blockEndFraction.getArrayValue(node.getNr());
     			logP += logh_tr(tInf0, tInf1);
     		}
     	}
@@ -181,21 +183,28 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     			double end   = nodes[i].getHeight() + branchlength * blockEndFraction.getValue(i);
     			int blocks = blockCount.getValue(i);
     			
-    			double t = start;
+    			
+    			// TODO verify that the +1 and *2 are correct
     			double delta = (end - start) / blocks;
+    			double t = end - delta;
     			for (int j = 0; j < blocks; j++) {
-    				logP += logS_s(t, t + delta);
-    				t = t + delta;
+    				logP += logS_s(t + delta, start);
+    				t = t - delta;
     			}
     			
     			// contribution of causing infections Poisson model with rate lambda_tr
     			double tau = end - start;
+    			
+//    			PoissonDistribution p = new PoissonDistributionImpl(lambda_tr.getValue() * tau);
+//    			logP += Math.log(p.probability(blocks));
+    			
     			logP += blocks * (Math.log(lambda_tr.getValue() * tau));
     			for (int j = 2; j <= blocks; j++) {
     				logP -= Math.log(j);
     			}
-    			logP += lambda_tr.getValue() * tau;
-    			logP -= Math.log(1.0 - Math.exp(lambda_tr.getValue() * tau));
+    			logP += -lambda_tr.getValue() * tau;
+    			
+    			logP -= Math.log(1.0 - Math.exp(-lambda_tr.getValue() * tau));
     			
     			
     		} else  if (colourAtBase.getValue(i) != colourAtBase.getValue(nodes[i].getParent().getNr())) {

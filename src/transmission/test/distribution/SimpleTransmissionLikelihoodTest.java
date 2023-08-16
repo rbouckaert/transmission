@@ -33,7 +33,7 @@ public class SimpleTransmissionLikelihoodTest {
         samplingHazard.initByName("C", "1.0", "shape", "2.5", "rate", "10.0");
         
         HazardFunction transmissionHazard = new GammaHazardFunction();
-        transmissionHazard.initByName("C", "1.5", "shape", "2.5", "rate", "10.0");
+        transmissionHazard.initByName("C", "1.5", "shape", "2.0", "rate", "10.0");
         
         TransmissionTreeLikelihood coal = new TransmissionTreeLikelihood();
         coal.initByName(
@@ -43,13 +43,13 @@ public class SimpleTransmissionLikelihoodTest {
         		"blockend", blockEnd, 
         		"blockcount", blockcount, 
         		"colour", colour,
-        		"endTime", "0.1",
+        		"endTime", "0.0",
         		"samplingHazard", samplingHazard,
         		"transmissionHazard", transmissionHazard,
         		"lambda", "1.0");
         
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
-        assertEquals(-24.13889, transmissionLikelihood, 1e-5);
+        assertEquals(-24.8279, transmissionLikelihood, 1e-5);
 	}
 }

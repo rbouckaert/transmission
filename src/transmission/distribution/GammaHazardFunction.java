@@ -1,6 +1,10 @@
 package transmission.distribution;
 
 import org.apache.commons.math.distribution.GammaDistributionImpl;
+
+import java.text.DecimalFormat;
+
+import org.apache.commons.math.MathException;
 import org.apache.commons.math.distribution.GammaDistribution;
 
 import beast.base.core.Description;
@@ -32,27 +36,39 @@ public class GammaHazardFunction extends HazardFunction {
 		constant = constantInput.get();
 	}
 	
+	DecimalFormat f = new DecimalFormat("#.##");
+	DecimalFormat f4 = new DecimalFormat("#.###");
+	
 	@Override
 	public double logS(double t, double d) {
 		update();
-		final double logS = -constant.getArrayValue() * samplingDist.density(t - d);
+		double logS = 0;
+		try {
+			logS = -constant.getArrayValue() * samplingDist.cumulativeProbability(t - d);
+		} catch (MathException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+System.err.println("logS" + constant.getArrayValue() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") \t= " + f4.format(logS));		
 		return logS;
 	}
 
 	private void update() {
-		samplingDist.setBeta(shape.getArrayValue());
+		samplingDist.setAlpha(shape.getArrayValue());
 		if (rate != null) {
-			samplingDist.setAlpha(1.0/rate.getArrayValue());
+			samplingDist.setBeta(1.0/rate.getArrayValue());
 		} else {
-			samplingDist.setAlpha(scale.getArrayValue());
+			samplingDist.setBeta(scale.getArrayValue());
 		}
 	}
 
 	@Override
-	public double logTr(double t, double d) {
+	public double logH(double t, double d) {
 		update();
-		final double logTr = Math.log(constant.getArrayValue()) + samplingDist.logDensity(t - d);
-		return logTr;
+		final double logH = Math.log(constant.getArrayValue()) + samplingDist.logDensity(t - d);
+System.err.println("logH" + constant.getArrayValue() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") = " + f4.format(logH));		
+		return logH;
 	}
 
 }

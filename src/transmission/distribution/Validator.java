@@ -18,6 +18,7 @@ public class Validator {
 	}
 
 	private boolean [] nodesTraversed;
+	private boolean allowInfectionsAfterSampling = false;
     private int nseen;
     private Tree tree;
     private IntegerParameter colourAtBase, blockCount;
@@ -73,7 +74,15 @@ public class Validator {
 				}
 			}
 		}
-		
+
+		// do not allow infections after sampling
+		// so coloured tree does not exceed sampling time
+		if (!allowInfectionsAfterSampling) {
+			for (int i = 0; i < tree.getLeafNodeCount(); i++) {
+				xx
+			}
+		}
+	
 		return true;
 	}
     

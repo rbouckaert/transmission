@@ -166,7 +166,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		int parent = nodes[i].getParent().getNr();
     		int parentColour = colourAtBase.getValue(parent);
     		if (baseColour != parentColour) {
-    			double tInf0 = segments.get(parent).birthTime;
+    			double tInf0 = segments.get(parentColour).birthTime;
     			Node node = nodes[i];
     			double tInf1 = node.getHeight() + node.getLength() * blockEndFraction.getArrayValue(node.getNr());
     			logP += logh_tr(tInf0, tInf1);

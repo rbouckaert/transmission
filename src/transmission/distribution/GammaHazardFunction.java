@@ -12,6 +12,7 @@ import beast.base.core.Function;
 import beast.base.core.Input;
 import beast.base.core.Function.Constant;
 import beast.base.core.Input.Validate;
+import beast.base.util.Randomizer;
 
 @Description("Defines a hazard function based on a gamma distribution")
 public class GammaHazardFunction extends HazardFunction {
@@ -50,7 +51,8 @@ public class GammaHazardFunction extends HazardFunction {
 			e.printStackTrace();
 		}
 		
-System.err.println("logS" + constant.getArrayValue() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") \t= " + f4.format(logS));		
+//System.err.println("log" + getID() + "_S"+ constant.getArrayValue() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") \t= " + f4.format(logS));		
+System.err.println("logS" + getID() + "(" + f.format(t-d) + ") # = " + f4.format(logS));		
 		return logS;
 	}
 
@@ -67,8 +69,17 @@ System.err.println("logS" + constant.getArrayValue() + "(" + f.format(t) + "-" +
 	public double logH(double t, double d) {
 		update();
 		final double logH = Math.log(constant.getArrayValue()) + samplingDist.logDensity(t - d);
-System.err.println("logH" + constant.getArrayValue() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") = " + f4.format(logH));		
+//System.err.println("log" + getID() + "_h" + constant.getArrayValue() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") = " + f4.format(logH));		
+System.err.println("logh" + getID() + "(" + f.format(t-d) + ") # = " + f4.format(logH));		
 		return logH;
 	}
 
+	
+	@Override
+	public double simulate() throws MathException {
+		double p = Randomizer.nextDouble();
+		update();
+		double t = samplingDist.inverseCumulativeProbability(p);
+		return t;
+	}
 }

@@ -3,8 +3,10 @@ package transmission.distribution;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.math.distribution.GammaDistribution;
@@ -29,7 +31,7 @@ import beastfx.app.util.OutFile;
 public class SimulatedTransmissionTree extends Runnable {
 	final public Input<Function> endTimeInput = new Input<>("endTime", "end time of the study", new Constant("2.0"));
 	final public Input<Function> popSizeInput = new Input<>("popSize",
-			"population size governing the coalescent process", new Constant("2.0"));
+			"population size governing the coalescent process", new Constant("0.1"));
 
 	final public Input<Function> sampleShapeInput = new Input<>("sampleShape",
 			"shape parameter of the sampling intensity function", new Constant("2.0"));
@@ -46,6 +48,9 @@ public class SimulatedTransmissionTree extends Runnable {
 			"constant multiplier of the transmission intensity function", new Constant("1.5"));
 
 	public Input<OutFile> outputInput = new Input<>("out","output file. Print to stdout if not specified");
+	public Input<Long> seedInput = new Input<>("seed","random number seed used to initialise the random number generator");
+	final public Input<Integer> maxAttemptsInput = new Input<>("maxAttempts",
+			"maximum number of attempts to generate coalescent sub-trees", 1000);
 
 	@Override
 	public void initAndValidate() {
@@ -53,6 +58,10 @@ public class SimulatedTransmissionTree extends Runnable {
 
 	@Override
 	public void run() throws Exception {
+		if (seedInput.get() != null) {
+			Randomizer.setSeed(seedInput.get());
+		}
+		
 		double endTime = endTimeInput.get().getArrayValue();
 		double popSize = popSizeInput.get().getArrayValue();
 
@@ -76,6 +85,10 @@ public class SimulatedTransmissionTree extends Runnable {
 		popFun.initByName("popSize", popSize + "");
 
 		List<Node> leafs = new ArrayList<>();
+		int colour = 0;
+		Map<Node, Integer> colourMap = new HashMap<>();
+		colourMap.put(root, colour);
+		
 		while (nodes.size() > 0) {
 			// continue with last node
 			Node node = nodes.remove(nodes.size() - 1);
@@ -87,7 +100,7 @@ public class SimulatedTransmissionTree extends Runnable {
 			boolean sample = (Randomizer.nextDouble() < sampleConstant);
 
 			// 3. simulate the time of sampling:
-			// TODO: need multiply by sampleConstant???
+			// Note: do not need multiply by sampleConstant
 			double sampletime = !sample ? 0
 					: node.getHeight() - sampleIntensity.inverseCumulativeProbability(Randomizer.nextDouble());
 			if (sampletime < 0) {
@@ -97,7 +110,7 @@ public class SimulatedTransmissionTree extends Runnable {
 			// 4. Simulate the times when node infects the new infectees
 			double[] times = new double[n];
 			for (int i = 0; i < n; i++) {
-				// TODO: need multiply by transmissionConstant???
+				// Note: do not need multiply by transmissionConstant
 				times[i] = node.getHeight()
 						- transmissionIntensity.inverseCumulativeProbability(Randomizer.nextDouble());
 			}
@@ -106,44 +119,55 @@ public class SimulatedTransmissionTree extends Runnable {
 			while (n > 0 && (times[n - 1] < 0 || times[n - 1] < sampletime)) {
 				n--;
 			}
+			
 			List<Node> current = new ArrayList<>();
 			// create leaf node
 			if (sample) {
 				Node leaf = new Node();
+				colourMap.put(leaf, colour);
 				leaf.setHeight(sampletime);
 				leafs.add(leaf);
 				current.add(leaf);
+				leaf.setID("t" + leafs.size());
 			}
 			// create internal (infection) nodes
 			for (int i = 0; i < n; i++) {
 				Node infectee = new Node();
+				colourMap.put(infectee, colour);
 				infectee.setHeight(times[i]);
 				nodes.add(infectee);
 				current.add(infectee);
 			}
+
 			
 			// 5. Sampling a within-host phylogeny
 			double currentHeight = sample ? sampletime : times[0];
-			List<Node> fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight());
+			
+			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get());
 			// connect to node
-			node.addChild(fragment.get(0));
+			node.addChild(fragment);
+			
+			colourFragment(fragment, colour, colourMap);
+			colour++;
 		}
 		
 		
 		// find all nodes to include in tree
-		Set<Node> inclodeNodes = new HashSet<>();
+		Set<Node> includedNodes = new HashSet<>();
 		for (Node node : leafs) {
 			while (node != root) {
-				inclodeNodes.add(node);
+				includedNodes.add(node);
 				node = node.getParent();
 			}
 		}
 		// remove nodes not included from tree
-		traverse(root, inclodeNodes);
+		traverse(root, includedNodes);
 
 		// convert to binary tree
 		String newick = toNewick(root);
 		
+		// for debugging
+		System.err.println(toShortNewick(root, colourMap));
 		
 		PrintStream out = System.out;
 		if (outputInput.get() != null) {
@@ -152,6 +176,46 @@ public class SimulatedTransmissionTree extends Runnable {
 		out.println(newick);
 	}
 
+	private Node simulateCoalescent(List<Node> current, ConstantPopulation popFun, double currentHeight,
+			double height, int maxAttemptCount) {
+		List<Node> fragment;
+		int attempt = 0;
+		do {
+			List<Node> currentCopy = new ArrayList<>(current);
+			fragment = simulateCoalescent(currentCopy, popFun, currentHeight, height);
+			if (fragment.size() == 1) {
+				return fragment.get(0);
+			}
+			attempt++;
+		} while (attempt < maxAttemptCount);
+		throw new RuntimeException("Could not find a proper coalescent tree after " + maxAttemptCount + " attempts. "
+				+ "Consider decreasing the population size or increasing maxAttempts.");
+	}
+
+	private void colourFragment(Node node, int colour, Map<Node, Integer> colourMap) {
+		colourMap.put(node,  colour);
+		for (Node child : node.getChildren()) {
+			colourFragment(child, colour, colourMap);
+		}
+	}
+
+	private String toShortNewick(Node node, Map<Node, Integer> colourMap) {
+		if (node.isLeaf()) {
+			return node.getID();
+		} else {
+			String newick = "(";
+			for (int i = 0; i < node.getChildCount(); i++) {
+				Node child = node.getChild(i);
+				newick += toShortNewick(child, colourMap);
+				newick += "[" + colourMap.get(child)+"]";
+				if (i < node.getChildCount() - 1) {
+					newick += ",";
+				}
+			}
+			return newick + ")";
+		}
+	}
+	
 	private String toNewick(Node node) {
 		switch(node.getChildCount()) {
 		case 0: {// leaf
@@ -159,35 +223,38 @@ public class SimulatedTransmissionTree extends Runnable {
 			Node p = node.getParent();
 			double blockStart = length;
 			double blockEnd = length;
-			int blockCount = 0;
+			int blockCount = -1;
 			while (p != null && p.getChildCount() == 1) {
 				blockEnd = length;
 				length += p.getLength();
 				p = p.getParent();
 				blockCount++;
 			}
-			return node.getID() + "[&blockcount=" + blockCount + ",start=" + (blockStart/length) + ",end=" + (blockEnd/length) + "]:" + length;
+			return node.getID() + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",start=" + (blockStart/length) + ",end=" + (blockEnd/length) : "") + "]:" + length;
 		}
 		case 1:
 			return toNewick(node.getChild(0));
 		case 2:
 			Node left = node.getLeft();
 			String leftNewick = toNewick(left);
-			Node right = node.getLeft();
+			Node right = node.getRight();
 			String rightNewick = toNewick(right);
 
 			double length = node.getLength();
 			Node p = node.getParent();
 			double blockStart = length;
 			double blockEnd = length;
-			int blockCount = 0;
-			while (p.getChildCount() == 1) {
+			int blockCount = -1;
+			while (p != null && p.getChildCount() == 1) {
 				blockEnd = length;
 				length += p.getLength();
 				p = p.getParent();
 				blockCount++;
 			}
-			return "(" + leftNewick + "," + rightNewick + ")" + "[&blockcount=" + blockCount + ",start=" + (blockStart/length) + ",end=" + (blockEnd/length) + "]:" + length; 
+			if (p == null) {
+				return "(" + leftNewick + "," + rightNewick + ")";
+			}
+			return "(" + leftNewick + "," + rightNewick + ")" + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",start=" + (blockStart/length) + ",end=" + (blockEnd/length) : "") + "]:" + length; 
 		}
 		return null;
 	}

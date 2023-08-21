@@ -17,7 +17,7 @@ import transmission.distribution.TransmissionTreeLikelihood;
 
 public class SimpleTransmissionLikelihoodTest {
 
-	//@Test
+	@Test
 	public void testSimpleCase1() {
 		TreeParser tree = new TreeParser("(Bob:1.7,Eve:2.1);");
 		
@@ -57,7 +57,7 @@ public class SimpleTransmissionLikelihoodTest {
 	}
 
 
-	//@Test
+	@Test
 	public void testSimpleCase2() {
 		TreeParser tree = new TreeParser("(Bob:1.7,Eve:2.1);");
 		
@@ -96,7 +96,7 @@ public class SimpleTransmissionLikelihoodTest {
         
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
-        assertEquals( -20.37201, transmissionLikelihood, 1e-5);
+        assertEquals( -20.70768, transmissionLikelihood, 1e-5);
 	}
 	
 	@Test
@@ -144,7 +144,7 @@ public class SimpleTransmissionLikelihoodTest {
         end[i] = (h-0.35 - nodes[i].getHeight()) / nodes[i].getLength();
         i++;
         // blockcount = 0
-        // TODO: check notes assume infection at `block end` (as defined in notes), not `block start`
+        // Note: notes assume infection at `block end` (as defined in notes), not `block start` for test3
         start[i] = (h-0.15 - nodes[i].getHeight()) / nodes[i].getLength();
         //end[i] = (h-0.03 - nodes[i].getHeight()) / nodes[i].getLength();
         end[i] = (h-0.15 - nodes[i].getHeight()) / nodes[i].getLength();
@@ -179,10 +179,11 @@ public class SimpleTransmissionLikelihoodTest {
         
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
-        assertEquals( -26.10661, transmissionLikelihood, 1e-5);
+        assertEquals( -25.45078, transmissionLikelihood, 1e-5);
+        //assertEquals( -26.10661, transmissionLikelihood, 1e-5);
 	}	
 
-	//@Test
+	@Test
 	public void testSimpleCase4() {
 		TreeParser tree = new TreeParser("(t3:0.3307722867,(t4:0.7084983373,t5:0.6330101104):0.6262222228);");
 		
@@ -220,13 +221,13 @@ public class SimpleTransmissionLikelihoodTest {
         		"blockend", blockEnd, 
         		"blockcount", blockcount, 
         		"colour", colour,
-        		"endTime", "0.0",
+        		"endTime", (1.3347-1.5)+ "",
         		"samplingHazard", samplingHazard,
         		"transmissionHazard", transmissionHazard,
         		"lambda", "4.0");
         
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
-        assertEquals( -13.828, transmissionLikelihood, 1e-3);
+        assertEquals( -14.726, transmissionLikelihood, 1e-3);
 	}
 }

@@ -200,8 +200,6 @@ System.err.println("\n#contribution of cases in blocks");
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
     		if (blockCount.getValue(i) > 0) {
 System.err.println("#node " + (i+1));
-
-    			
     			// contribution of not being sampled
     			double branchlength = nodes[i].getLength();
     			double start = nodes[i].getHeight() + branchlength * blockStartFraction.getValue(i);
@@ -211,15 +209,15 @@ System.err.println("#node " + (i+1));
     			
     			// TODO verify that the +1 and *2 are correct
     			double delta = (end - start) / blocks;
-    			double t = end - delta;
+    			double t = end;
     			for (int j = 0; j < blocks; j++) {
-    				logP += logS_s(t + delta, start);
+    				logP += logS_s(t, d);
     				t = t - delta;
     			}
     			
     			// contribution of causing infections Poisson model with rate lambda_tr
     			double tau = end - start;
-    			
+System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().getHeight() - start) + " = " + tau);    			
 //    			PoissonDistribution p = new PoissonDistributionImpl(lambda_tr.getValue() * tau);
 //    			logP += Math.log(p.probability(blocks));
     			

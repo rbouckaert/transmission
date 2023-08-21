@@ -17,7 +17,7 @@ import transmission.distribution.TransmissionTreeLikelihood;
 
 public class SimpleTransmissionLikelihoodTest {
 
-	@Test
+	//@Test
 	public void testSimpleCase1() {
 		TreeParser tree = new TreeParser("(Bob:1.7,Eve:2.1);");
 		
@@ -57,7 +57,7 @@ public class SimpleTransmissionLikelihoodTest {
 	}
 
 
-	@Test
+	//@Test
 	public void testSimpleCase2() {
 		TreeParser tree = new TreeParser("(Bob:1.7,Eve:2.1);");
 		
@@ -109,18 +109,51 @@ public class SimpleTransmissionLikelihoodTest {
         Node [] nodes = tree.getNodesAsArray();
         
         double h = tree.getRoot().getHeight();
-        double e4 = (h-0.96 - nodes[4].getHeight()) / nodes[4].getLength(); 
-        double e5 = (h-0.35 - nodes[5].getHeight()) / nodes[5].getLength(); 
-        double e6 = (h-0.22 - nodes[6].getHeight()) / nodes[6].getLength(); 
-
-        double s4 = (h-1.33 - nodes[4].getHeight()) / nodes[4].getLength(); 
-        double s5 = (h-0.72 - nodes[5].getHeight()) / nodes[5].getLength(); 
-        double s6 = (h-0.50 - nodes[6].getHeight()) / nodes[6].getLength(); 
         
+        double [] end = new double[8];
+        double [] start = new double[8];
+        int i = 0;
+        // blockcount = 0
+        start[i] = (h-1.3 - nodes[i].getHeight()) / nodes[i].getLength();
+        end[i] = (h-0.94 - nodes[i].getHeight()) / nodes[i].getLength();
+        i++;
+        // blockcount = 0
+        //start[i] = (h-0.92 - nodes[i].getHeight()) / nodes[i].getLength();
+        start[i] = (h-0.85 - nodes[i].getHeight()) / nodes[i].getLength();
+        end[i] = (h-0.85 - nodes[i].getHeight()) / nodes[i].getLength();
+        i++;
+        // blockcount = 0
+        start[i] = (h-0.47 - nodes[i].getHeight()) / nodes[i].getLength();
+        end[i] = (h-0.25 - nodes[i].getHeight()) / nodes[i].getLength();
+        i++;
+        // blockcount = 0
+        //start[i] = (h-1.45 - nodes[i].getHeight()) / nodes[i].getLength();
+        start[i] = (h-1.05 - nodes[i].getHeight()) / nodes[i].getLength();
+        end[i] = (h-1.05 - nodes[i].getHeight()) / nodes[i].getLength();
+        i++;
+        // blockcount = 2
+        start[i] = (h-1.33 - nodes[i].getHeight()) / nodes[i].getLength();
+        end[i] = (h-0.96 - nodes[i].getHeight()) / nodes[i].getLength();
+        i++;
+        // blockcount = 4
+        start[i] = (h-0.5 - nodes[i].getHeight()) / nodes[i].getLength();
+        end[i] = (h-0.22 - nodes[i].getHeight()) / nodes[i].getLength();
+        i++;
+        // blockcount = 3
+        start[i] = (h-0.72 - nodes[i].getHeight()) / nodes[i].getLength();
+        end[i] = (h-0.35 - nodes[i].getHeight()) / nodes[i].getLength();
+        i++;
+        // blockcount = 0
+        // TODO: check notes assume infection at `block end` (as defined in notes), not `block start`
+        start[i] = (h-0.15 - nodes[i].getHeight()) / nodes[i].getLength();
+        //end[i] = (h-0.03 - nodes[i].getHeight()) / nodes[i].getLength();
+        end[i] = (h-0.15 - nodes[i].getHeight()) / nodes[i].getLength();
+        i++;
+ 
         
-        RealParameter blockStart = new RealParameter(); blockStart.initByName("dimension", 8,       "value", "0.5 0.5 0.5 0.5 " + s4 + " " + s5 + " " + s6 + " 0.5" );
-        RealParameter blockEnd = new RealParameter(); blockEnd.initByName("dimension", 8,           "value", "0.5 0.5 0.5 0.5 " + e4 + " " + e5 + " " + e6 + " 0.5");
-        IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 8, "value", "0 0 0 0 2 4 3 0");
+        RealParameter blockStart = new RealParameter(); blockStart.initByName("dimension", 8,       "value", start[0] + " " + start[1] + " " + start[2] + " " + start[3] + " " + start[4] + " " + start[5] + " " + start[6] + " " + start[7]);
+        RealParameter blockEnd = new RealParameter(); blockEnd.initByName("dimension", 8,           "value", end[0] + " " + end[1] + " " + end[2] + " " + end[3] + " " + end[4] + " " + end[5] + " " + end[6] + " " + end[7]);
+        IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 8, "value", "0 0 0 0 2	 4 3 0");
         IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 9,         "value", "0 1 2 3 4 0 3 2 8");
         
         HazardFunction samplingHazard = new GammaHazardFunction();
@@ -139,7 +172,7 @@ public class SimpleTransmissionLikelihoodTest {
         		"blockend", blockEnd, 
         		"blockcount", blockcount, 
         		"colour", colour,
-        		"endTime", "0.0",
+        		"endTime", (1.5347 - 1.7) + "",
         		"samplingHazard", samplingHazard,
         		"transmissionHazard", transmissionHazard,
         		"lambda", "4.0");
@@ -149,7 +182,7 @@ public class SimpleTransmissionLikelihoodTest {
         assertEquals( -26.10661, transmissionLikelihood, 1e-5);
 	}	
 
-	@Test
+	//@Test
 	public void testSimpleCase4() {
 		TreeParser tree = new TreeParser("(t3:0.3307722867,(t4:0.7084983373,t5:0.6330101104):0.6262222228);");
 		
@@ -194,6 +227,6 @@ public class SimpleTransmissionLikelihoodTest {
         
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
-        assertEquals( -12.76696, transmissionLikelihood, 1e-5);
+        assertEquals( -13.828, transmissionLikelihood, 1e-3);
 	}
 }

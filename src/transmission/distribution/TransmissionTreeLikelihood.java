@@ -7,9 +7,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.commons.math.distribution.PoissonDistribution;
-import org.apache.commons.math.distribution.PoissonDistributionImpl;
-
 import beast.base.core.Description;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
@@ -71,12 +68,12 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	blockCount = blockCountInput.get();
     	colourAtBase = colourInput.get();
     	
-    	sanityCheck(blockStartFraction, n , "blockStart");
-    	sanityCheck(blockEndFraction, n, "blockEnd");
+    	sanityCheck(blockStartFraction, n-1 , "blockStart");
+    	sanityCheck(blockEndFraction, n-1, "blockEnd");
 
-    	if (blockCount.getDimension() != n) {
-    		blockCount.setDimension(n);
-    		Log.warning("WARNING: Setting dimension of blockCount parameter " + blockCount.getID() + " to " + n);
+    	if (blockCount.getDimension() != n-1) {
+    		blockCount.setDimension(n-1);
+    		Log.warning("WARNING: Setting dimension of blockCount parameter " + blockCount.getID() + " to " + (n-1));
     	}
 		if (blockCount.getLower() < 0) {
 			blockCount.setLower(0);
@@ -137,9 +134,12 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		segments = collectSegments();
     	}
 
+System.err.println("\n#contribution of sampled cases");
 		// contribution of sampled cases
     	for (int i = 0; i < n; i++) {
-			// contribution of not being sampled
+System.err.println("#node " + (i+1));
+
+    		// contribution of not being sampled
     		SegmentIntervalList intervals = segments.get(i);
     		double start = intervals.birthTime;
     		double end = intervals.times.get(0);
@@ -148,9 +148,28 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		logP +=  logS_tr(start, end); // further contribution below
     	}
 
+System.err.println("\n#transmissions from sampled cases");
+    	// further contribution of causing infections
+    	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
+    		int baseColour = colourAtBase.getValue(i);
+    		int parent = nodes[i].getParent().getNr();
+    		int parentColour = colourAtBase.getValue(parent);
+    		if (baseColour != parentColour && parentColour < n) {
+System.err.println("#node " + (i+1));
+
+    			double tInf0 = segments.get(parentColour).birthTime;
+    			Node node = nodes[i];
+    			double tInf1 = node.getHeight() + node.getLength() * blockEndFraction.getArrayValue(node.getNr());
+    			logP += logh_tr(tInf0, tInf1);
+    		}
+    	}
+    	
+System.err.println("\n#contribution of unsampled cases");
     	// contribution of unsampled cases
     	for (int i = n; i < tree.getNodeCount(); i++) {
     		if (colourAtBase.getValue(i) >= n) {
+System.err.println("#node " + (i+1));
+
     			// contribution of not being sampled
         		SegmentIntervalList intervals = segments.get(i);
         		double start = intervals.birthTime;
@@ -160,12 +179,15 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		}
     	}
     	
+System.err.println("\n#transmissions from unsampled cases");
 		// further contribution of causing infections
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
     		int baseColour = colourAtBase.getValue(i);
     		int parent = nodes[i].getParent().getNr();
     		int parentColour = colourAtBase.getValue(parent);
-    		if (baseColour != parentColour) {
+    		if (baseColour != parentColour && parentColour >= n) {
+System.err.println("#node " + (i+1));
+
     			double tInf0 = segments.get(parentColour).birthTime;
     			Node node = nodes[i];
     			double tInf1 = node.getHeight() + node.getLength() * blockEndFraction.getArrayValue(node.getNr());
@@ -173,9 +195,12 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		}
     	}
     	
+System.err.println("\n#contribution of cases in blocks");
     	// contribution of cases in blocks
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
     		if (blockCount.getValue(i) > 0) {
+System.err.println("#node " + (i+1));
+
     			
     			// contribution of not being sampled
     			double branchlength = nodes[i].getLength();
@@ -217,19 +242,23 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	}
     
     private double logS_tr(double t, double d) {
-    	return transmissionHazard.logS(t, d);
+    	return transmissionHazard.logS(tree.getRoot().getHeight() - d, tree.getRoot().getHeight() - t);
+    	// return transmissionHazard.logS(t, d);
     }    
     
     private double logS_s(double t, double d) {
-    	return samplingHazard.logS(t, d);
+    	return samplingHazard.logS(tree.getRoot().getHeight() - d, tree.getRoot().getHeight() - t);
+    	//return samplingHazard.logS(t, d);
     }
     
     private double logh_s(double t, double d) {
-    	return samplingHazard.logH(t, d);
+    	return samplingHazard.logH(tree.getRoot().getHeight() - d, tree.getRoot().getHeight() - t);
+    	//return samplingHazard.logH(t, d);
     }
     
     private double logh_tr(double t, double d) {
-    	return transmissionHazard.logH(t, d);
+    	return transmissionHazard.logH(tree.getRoot().getHeight() - d, tree.getRoot().getHeight() - t);
+    	// return transmissionHazard.logH(t, d);
     }
 
     private List<SegmentIntervalList> segments;

@@ -7,6 +7,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.commons.math.distribution.PoissonDistribution;
+import org.apache.commons.math.distribution.PoissonDistributionImpl;
+
 import beast.base.core.Description;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
@@ -54,6 +57,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     private RealParameter lambda_tr; // mean rate for Poisson process 
 	private HazardFunction samplingHazard;
 	private HazardFunction transmissionHazard;
+
+	private boolean updateColours = true;
+	
 	
     @Override
     public void initAndValidate() {
@@ -109,7 +115,10 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     public double calculateLogP() {
     	logP = 0;
     	
-    	calcColourAtBase();    	
+    	if (!calcColourAtBase()) {
+    		logP = Double.NEGATIVE_INFINITY;
+    		return logP;
+    	}
     	
     	if (!validator.isValid(colourAtBase)) {
     		logP = Double.NEGATIVE_INFINITY;
@@ -121,11 +130,17 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	return logP;
     }
     
+	
+	
     
-	public void calcColourAtBase() {
+	// initialise colourAtBase
+	// return true if a valid colouring can be found, 
+	// return false if there is a path between leafs without a transmission
+	public boolean calcColourAtBase() {
 		colourAtBase[tree.getRoot().getNr()] = tree.getRoot().getNr();
 		calcColourAtBase(tree.getRoot());
 		// normalise colours so leaf i has colour i
+		// but unsampled nodes remain at their colour number
 		int n = colourAtBase.length;
 		int leafCount = tree.getLeafNodeCount();
 		int [] permutation = new int[n];
@@ -133,18 +148,26 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 			permutation[i] = i;
 		}
 		for (int i = 0; i < leafCount; i++) {
-			int j = colourAtBase[i]; 
+			int j = colourAtBase[i];
+			if (j >= leafCount && permutation[j] < leafCount) {
+				// we already assigned permutation[j] to another leaf
+				// so there must be a path without transmission between that leaf
+				// and leaf i, i.e. this is not a valid colouring
+				return false;
+			}
 			permutation[j] = i;
 		}
-		int j = leafCount;
-		for (int i = 0; i < n; i++) {
-			if (permutation[i] == 2*n+i) {
-				permutation[i] = j++;
-			}
-		}
+//		int j = leafCount;
+//		for (int i = 0; i < n; i++) {
+//			if (permutation[i] == 2*n+i) {
+//				permutation[i] = j++;
+//			}
+//		}
 		for (int i = 0; i < n; i++) {
 			colourAtBase[i] = permutation[colourAtBase[i]];
 		}
+		updateColours = false;
+		return true;
 	}
 
 	private void calcColourAtBase(Node node) {
@@ -235,7 +258,9 @@ System.err.println("\n#contribution of cases in blocks");
     	// contribution of cases in blocks
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
     		if (blockCount.getValue(i) > 0) {
-System.err.println("#node " + (i+1));
+    			double logPBlock = 0;
+                
+    			System.err.println("#node " + (i+1));
     			// contribution of not being sampled
     			double branchlength = nodes[i].getLength();
     			double start = nodes[i].getHeight() + branchlength * blockStartFraction.getValue(i);
@@ -247,25 +272,26 @@ System.err.println("#node " + (i+1));
     			double delta = (end - start) / blocks;
     			double t = end;
     			for (int j = 0; j < blocks; j++) {
-    				logP += logS_s(t, d);
+    				logPBlock += logS_s(t, d);
     				t = t - delta;
     			}
     			
     			// contribution of causing infections Poisson model with rate lambda_tr
     			double tau = end - start;
-System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().getHeight() - start) + " = " + tau);    			
 //    			PoissonDistribution p = new PoissonDistributionImpl(lambda_tr.getValue() * tau);
-//    			logP += Math.log(p.probability(blocks));
+//    			logPBlock += Math.log(p.probability(blocks));
     			
-    			logP += blocks * (Math.log(lambda_tr.getValue() * tau));
+    			logPBlock += blocks * (Math.log(lambda_tr.getValue() * tau));
     			for (int j = 2; j <= blocks; j++) {
-    				logP -= Math.log(j);
+    				logPBlock -= Math.log(j);
     			}
-    			logP += -lambda_tr.getValue() * tau;
+    			logPBlock += -lambda_tr.getValue() * tau;
     			
-    			logP -= Math.log(1.0 - Math.exp(-lambda_tr.getValue() * tau));
+    			logPBlock -= Math.log(1.0 - Math.exp(-lambda_tr.getValue() * tau));
     			
+    			System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().getHeight() - start) + " = " + tau + " logPBlock=" + logPBlock);    			
     			
+    			logP += logPBlock;
     		} else  if (colourAtBase[i] != colourAtBase[nodes[i].getParent().getNr()]) {
     			// blockCount[i] == 0 but parent colour differs from base colour
     			// TODO: confirm there is no contribution ???
@@ -591,7 +617,20 @@ System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().
   	}
 
 	
+	
+	public int getColour(int i) {
+		if (updateColours) {
+			calcColourAtBase();
+		}
+		return colourAtBase[i];
+	}
 
+	public int [] getColouring() {
+		if (updateColours) {
+			calcColourAtBase();
+		}
+		return colourAtBase;
+	}
 	
 	@Override
     public List<String> getConditions() {
@@ -615,4 +654,17 @@ System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().
 		// TODO Auto-generated method stub
 	}
 
+	
+	
+	@Override
+	public void restore() {
+		updateColours = true;
+	}
+	
+	@Override
+	protected boolean requiresRecalculation() {
+		updateColours = true;
+		return true;
+	}
+	
 }

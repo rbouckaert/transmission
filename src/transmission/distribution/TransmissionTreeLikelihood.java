@@ -27,7 +27,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     final public Input<RealParameter> blockStartFractionInput = new Input<>("blockstart", "start of block in fraction of branch length", Validate.REQUIRED);
     final public Input<RealParameter> blockEndFractionInput = new Input<>("blockend", "end of block in fraction of branch length", Validate.REQUIRED);
     final public Input<IntegerParameter> blockCountInput = new Input<>("blockcount", "number of transitions inside a block", Validate.REQUIRED);
-    final public Input<IntegerParameter> colourInput = new Input<>("colour", "colour of the base of the branch", Validate.REQUIRED);
+//    final public Input<IntegerParameter> colourInput = new Input<>("colour", "colour of the base of the branch", Validate.REQUIRED);
     final public Input<PopulationFunction> popSizeInput = new Input<>("populationModel", "A population size model", Validate.REQUIRED);
 
     final public Input<RealParameter> endTimeInput = new Input<>("endTime", "time at which the study finished", Validate.REQUIRED);
@@ -44,7 +44,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     private RealParameter blockStartFraction;
     private RealParameter blockEndFraction;
     private IntegerParameter blockCount;
-    private IntegerParameter colourAtBase;
+    private int [] colourAtBase;
     private PopulationFunction popSizeFunction;
     private Validator validator;
     
@@ -66,7 +66,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	blockStartFraction = blockStartFractionInput.get();
     	blockEndFraction = blockEndFractionInput.get();
     	blockCount = blockCountInput.get();
-    	colourAtBase = colourInput.get();
+    	colourAtBase = new int[n];
     	
     	sanityCheck(blockStartFraction, n-1 , "blockStart");
     	sanityCheck(blockEndFraction, n-1, "blockEnd");
@@ -79,16 +79,10 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 			blockCount.setLower(0);
     		Log.warning("WARNING: Setting lower bound of blockCount parameter " + blockCount.getID() + " to 0");
 		}
-		
-    	if (colourAtBase.getDimension() != n) {
-    		colourAtBase.setDimension(n);
-    		Log.warning("WARNING: Setting dimension of colourAtBase parameter " + colourAtBase.getID() + " to " + n);
-    	}
-    	
+		    	
     	popSizeFunction = popSizeInput.get();
     	
-    	validator = new Validator(tree, colourAtBase, blockCount);
-    	
+    	validator = new Validator(tree, colourAtBase, blockCount);    	
 
     	endTime = endTimeInput.get();
 		lambda_tr = lambdaTrInput.get();
@@ -114,7 +108,10 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	@Override
     public double calculateLogP() {
     	logP = 0;
-    	if (!validator.isValid()) {
+    	
+    	calcColourAtBase();    	
+    	
+    	if (!validator.isValid(colourAtBase)) {
     		logP = Double.NEGATIVE_INFINITY;
     		return logP;
     	}
@@ -125,6 +122,45 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     }
     
     
+	public void calcColourAtBase() {
+		colourAtBase[tree.getRoot().getNr()] = tree.getRoot().getNr();
+		calcColourAtBase(tree.getRoot());
+		// normalise colours so leaf i has colour i
+		int n = colourAtBase.length;
+		int leafCount = tree.getLeafNodeCount();
+		int [] permutation = new int[n];
+		for (int i = 0; i < n; i++) {
+			permutation[i] = i;
+		}
+		for (int i = 0; i < leafCount; i++) {
+			int j = colourAtBase[i]; 
+			permutation[j] = i;
+		}
+		int j = leafCount;
+		for (int i = 0; i < n; i++) {
+			if (permutation[i] == 2*n+i) {
+				permutation[i] = j++;
+			}
+		}
+		for (int i = 0; i < n; i++) {
+			colourAtBase[i] = permutation[colourAtBase[i]];
+		}
+	}
+
+	private void calcColourAtBase(Node node) {
+		if (!node.isRoot()) {
+			int k = node.getNr();
+			if (blockCount.getArrayValue(node.getNr()) < 0) {
+				colourAtBase[k] = colourAtBase[node.getParent().getNr()];
+			} else {
+				colourAtBase[k] = node.getNr();
+			}
+		}
+		for (Node child : node.getChildren()) {
+			calcColourAtBase(child);
+		}
+	}
+
 	public double calcTransmissionLikelihood() {
     	double d = endTime.getArrayValue();
     	double logP = 0;
@@ -151,9 +187,9 @@ System.err.println("#node " + (i+1));
 System.err.println("\n#transmissions from sampled cases");
     	// further contribution of causing infections
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
-    		int baseColour = colourAtBase.getValue(i);
+    		int baseColour = colourAtBase[i];
     		int parent = nodes[i].getParent().getNr();
-    		int parentColour = colourAtBase.getValue(parent);
+    		int parentColour = colourAtBase[parent];
     		if (baseColour != parentColour && parentColour < n) {
 System.err.println("#node " + (i+1));
 
@@ -167,7 +203,7 @@ System.err.println("#node " + (i+1));
 System.err.println("\n#contribution of unsampled cases");
     	// contribution of unsampled cases
     	for (int i = n; i < tree.getNodeCount(); i++) {
-    		if (colourAtBase.getValue(i) >= n) {
+    		if (colourAtBase[i] >= n) {
 System.err.println("#node " + (i+1));
 
     			// contribution of not being sampled
@@ -182,9 +218,9 @@ System.err.println("#node " + (i+1));
 System.err.println("\n#transmissions from unsampled cases");
 		// further contribution of causing infections
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
-    		int baseColour = colourAtBase.getValue(i);
+    		int baseColour = colourAtBase[i];
     		int parent = nodes[i].getParent().getNr();
-    		int parentColour = colourAtBase.getValue(parent);
+    		int parentColour = colourAtBase[parent];
     		if (baseColour != parentColour && parentColour >= n) {
 System.err.println("#node " + (i+1));
 
@@ -230,7 +266,7 @@ System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().
     			logP -= Math.log(1.0 - Math.exp(-lambda_tr.getValue() * tau));
     			
     			
-    		} else  if (colourAtBase.getValue(i) != colourAtBase.getValue(nodes[i].getParent().getNr())) {
+    		} else  if (colourAtBase[i] != colourAtBase[nodes[i].getParent().getNr()]) {
     			// blockCount[i] == 0 but parent colour differs from base colour
     			// TODO: confirm there is no contribution ???
     		}
@@ -469,14 +505,14 @@ System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().
 		}
 
 		for (int i =  0; i < nodeCount; i++) {
-			int colour = colourAtBase.getValue(i);
+			int colour = colourAtBase[i];
 			if (segments.get(colour) == null) {
 				segments.set(colour, new SegmentIntervalList());
 			}
 		}
 		
 		for (int i =  0; i < nodeCount; i++) {
-			int colour = colourAtBase.getValue(i);
+			int colour = colourAtBase[i];
 			Node node = tree.getNode(i);
 			SegmentIntervalList intervals = (SegmentIntervalList) segments.get(colour);
 			
@@ -484,7 +520,7 @@ System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().
 			intervals.addEvent(node.getHeight(), node.isLeaf() ? IntervalType.SAMPLE : IntervalType.COALESCENT);
 			if (!node.isRoot()) {
 				int parentNr = node.getParent().getNr();
-				int parentColour = colourAtBase.getValue(parentNr);
+				int parentColour = colourAtBase[parentNr];
 				if (colour != parentColour) {
 					// add sampling event at top of block
 					intervals = (SegmentIntervalList) segments.get(parentColour);
@@ -563,7 +599,7 @@ System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().
         conditions.add(blockStartFractionInput.get().getID());
         conditions.add(blockEndFractionInput.get().getID());
         conditions.add(blockCountInput.get().getID());
-        conditions.add(colourInput.get().getID());
+        //conditions.add(colourInput.get().getID());
         return conditions;
     }
 

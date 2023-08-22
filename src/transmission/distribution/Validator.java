@@ -11,7 +11,7 @@ import beast.base.inference.parameter.IntegerParameter;
 /** make sure a valid colouring/blockcount assignment is done **/
 public class Validator {
 
-	public Validator(Tree tree, IntegerParameter colourAtBase, IntegerParameter blockCount) {
+	public Validator(Tree tree, int [] colourAtBase, IntegerParameter blockCount) {
 		this.tree = tree;
 		this.colourAtBase = colourAtBase;
 		this.blockCount = blockCount;
@@ -21,17 +21,18 @@ public class Validator {
 	private boolean allowInfectionsAfterSampling = false;
     private int nseen;
     private Tree tree;
-    private IntegerParameter colourAtBase, blockCount;
+    private int [] colourAtBase;
+    private IntegerParameter blockCount;
     
 	/** check whether the colouring is valid, that is
 	 * o each leaf i has colour i
 	 * o each branch with blockcount > 0 has different colour at base than at parent
 	 * o each coloured segment is connected
 	 */
-	public boolean isValid() {
+	public boolean isValid(int [] colourAtBase) {
 		// each leaf i has colour i
 		for (int i = 0; i < tree.getLeafNodeCount(); i++) {
-			if (colourAtBase.getValue(i) != i) {
+			if (colourAtBase[i] != i) {
 				return false;
 			}
 		}
@@ -40,8 +41,8 @@ public class Validator {
 		for (int i = 0; i < tree.getLeafNodeCount() - 1; i++) {
 			if (blockCount.getValue(i) > 0) {
 				Node node = tree.getNode(i);
-				int baseColour = colourAtBase.getValue(node.getNr());
-				int parentColour = colourAtBase.getValue(node.getParent().getNr());
+				int baseColour = colourAtBase[node.getNr()];
+				int parentColour = colourAtBase[node.getParent().getNr()];
 				if (baseColour == parentColour) {
 					return false;
 				}
@@ -51,7 +52,7 @@ public class Validator {
 		// each coloured segment is connected
 		List<Node> [] segments = new List[tree.getNodeCount()];
 		for (int i = 0; i < tree.getNodeCount(); i++) {
-			int colour = colourAtBase.getValue(i);
+			int colour = colourAtBase[i];
 			if (segments[colour] == null) {
 				segments[colour] = new ArrayList<>();
 			}

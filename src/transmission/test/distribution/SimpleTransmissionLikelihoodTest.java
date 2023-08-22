@@ -1,8 +1,7 @@
 package transmission.test.distribution;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.xml.crypto.NodeSetData;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +28,7 @@ public class SimpleTransmissionLikelihoodTest {
         double bs2 = (2.1-0.65)/2.1;
         RealParameter blockStart = new RealParameter(); blockStart.initByName("dimension", 2, "value",  bs1+" "+bs2);
         RealParameter blockEnd = new RealParameter(); blockEnd.initByName("dimension", 2, "value",  bs1+" "+bs2);
-        IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 2, "value", 0);
+        IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 2, "value", "0 0");
         IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 3, "value", "0 1 2");
         
         HazardFunction samplingHazard = new GammaHazardFunction();
@@ -45,12 +44,13 @@ public class SimpleTransmissionLikelihoodTest {
         		"blockstart", blockStart, 
         		"blockend", blockEnd, 
         		"blockcount", blockcount, 
-        		"colour", colour,
+        		//"colour", colour,
         		"endTime", "0.0",
         		"samplingHazard", samplingHazard,
         		"transmissionHazard", transmissionHazard,
         		"lambda", "1.0");
         
+        coal.calcColourAtBase();
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
         assertEquals(-24.8279, transmissionLikelihood, 1e-5);
@@ -88,12 +88,13 @@ public class SimpleTransmissionLikelihoodTest {
         		"blockstart", blockStart, 
         		"blockend", blockEnd, 
         		"blockcount", blockcount, 
-        		"colour", colour,
+        		//"colour", colour,
         		"endTime", "0.0",
         		"samplingHazard", samplingHazard,
         		"transmissionHazard", transmissionHazard,
         		"lambda", "4.0");
         
+        coal.calcColourAtBase();
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
         assertEquals( -20.70768, transmissionLikelihood, 1e-5);
@@ -113,7 +114,7 @@ public class SimpleTransmissionLikelihoodTest {
         double [] end = new double[8];
         double [] start = new double[8];
         int i = 0;
-        // blockcount = 0
+        // blockcount = -1
         start[i] = (h-1.3 - nodes[i].getHeight()) / nodes[i].getLength();
         end[i] = (h-0.94 - nodes[i].getHeight()) / nodes[i].getLength();
         i++;
@@ -122,11 +123,11 @@ public class SimpleTransmissionLikelihoodTest {
         start[i] = (h-0.85 - nodes[i].getHeight()) / nodes[i].getLength();
         end[i] = (h-0.85 - nodes[i].getHeight()) / nodes[i].getLength();
         i++;
-        // blockcount = 0
+        // blockcount = -1
         start[i] = (h-0.47 - nodes[i].getHeight()) / nodes[i].getLength();
         end[i] = (h-0.25 - nodes[i].getHeight()) / nodes[i].getLength();
         i++;
-        // blockcount = 0
+        // blockcount = -1
         //start[i] = (h-1.45 - nodes[i].getHeight()) / nodes[i].getLength();
         start[i] = (h-1.05 - nodes[i].getHeight()) / nodes[i].getLength();
         end[i] = (h-1.05 - nodes[i].getHeight()) / nodes[i].getLength();
@@ -153,7 +154,7 @@ public class SimpleTransmissionLikelihoodTest {
         
         RealParameter blockStart = new RealParameter(); blockStart.initByName("dimension", 8,       "value", start[0] + " " + start[1] + " " + start[2] + " " + start[3] + " " + start[4] + " " + start[5] + " " + start[6] + " " + start[7]);
         RealParameter blockEnd = new RealParameter(); blockEnd.initByName("dimension", 8,           "value", end[0] + " " + end[1] + " " + end[2] + " " + end[3] + " " + end[4] + " " + end[5] + " " + end[6] + " " + end[7]);
-        IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 8, "value", "0 0 0 0 2	 4 3 0");
+        IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 8, "value", "-1 0 -1 -1 2 4 3 0");
         IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 9,         "value", "0 1 2 3 4 0 3 2 8");
         
         HazardFunction samplingHazard = new GammaHazardFunction();
@@ -171,12 +172,13 @@ public class SimpleTransmissionLikelihoodTest {
         		"blockstart", blockStart, 
         		"blockend", blockEnd, 
         		"blockcount", blockcount, 
-        		"colour", colour,
+        		//"colour", colour,
         		"endTime", (1.5347 - 1.7) + "",
         		"samplingHazard", samplingHazard,
         		"transmissionHazard", transmissionHazard,
         		"lambda", "4.0");
         
+        coal.calcColourAtBase();
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
         assertEquals( -25.45078, transmissionLikelihood, 1e-5);
@@ -202,7 +204,7 @@ public class SimpleTransmissionLikelihoodTest {
         
         RealParameter blockStart = new RealParameter(); blockStart.initByName("dimension", 4,       "value", s3 + " 0.5 " + s4 + " 0.5" );
         RealParameter blockEnd = new RealParameter(); blockEnd.initByName("dimension", 4,           "value", e3 + " 0.5 " + e4 + " 0.5");
-        IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 4, "value", "0 0 2 0");
+        IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 4, "value", "0 -1 2 -1");
         IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 5,         "value", "0 1 2 1 1");
         
         HazardFunction samplingHazard = new GammaHazardFunction();
@@ -220,12 +222,13 @@ public class SimpleTransmissionLikelihoodTest {
         		"blockstart", blockStart, 
         		"blockend", blockEnd, 
         		"blockcount", blockcount, 
-        		"colour", colour,
+        		//"colour", colour,
         		"endTime", (1.3347-1.5)+ "",
         		"samplingHazard", samplingHazard,
         		"transmissionHazard", transmissionHazard,
         		"lambda", "4.0");
         
+        coal.calcColourAtBase();
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
         assertEquals( -14.726, transmissionLikelihood, 1e-3);

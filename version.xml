@@ -2,5 +2,14 @@
     <depends on="BEAST.base" atleast="2.7.5"/>
     <depends on="BEAST.app" atleast="2.7.5"/>
 
-    <!-- Add other dependencies as necessary. -->
+    
+    <service type="beast.base.core.BEASTInterface">
+        <provider classname="transmission.likelihood.TransmissionTreeLikelihood"/>
+        <provider classname="transmission.likelihood.GammaHazardFunction"/>
+        <provider classname="transmission.likelihood.Validator"/>
+        
+        <provider classname="transmission.operator.BlockOperator"/>
+        
+        <provider classname="transmission.util.ColourLogger"/>
+	</service>    
 </addon>

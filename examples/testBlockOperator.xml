@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.base.evolution.alignment:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="" version="2.7">
+
+    <map name="Uniform" >beast.base.inference.distribution.Uniform</map>
+    <map name="prior" >beast.base.inference.distribution.Prior</map>
+
+    <run id="mcmc" spec="MCMC" chainLength="10000000">
+        <state id="state" spec="State" storeEvery="5000">
+			<!-- estimated transmission parameters -->
+            <stateNode id="blockstart.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
+            <stateNode id="blockend.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
+            <stateNode id="blockcount.t:dna" spec="parameter.IntegerParameter" value="0" lower="-1"/>
+        </state>
+        
+        <distribution id="prior" spec="CompoundDistribution">
+            <prior name="distribution" id="BlockCountPrior.s:dna" x="@blockcount.t:dna">
+                <Uniform name="distr" lower="-1" upper="3"/>
+            </prior>
+            <prior name="distribution" id="BlockStartPrior.s:dna" x="@blockstart.t:dna">
+                <Uniform name="distr" lower="0" upper="1"/>
+            </prior>
+            <prior name="distribution" id="BlockEndPrior.s:dna" x="@blockend.t:dna">
+                <Uniform name="distr" lower="0" upper="1"/>
+            </prior>
+        </distribution>
+        
+		<!-- estimated transmission parameters -->
+        <operator id="blockStartScaler.t:dna" spec="transmission.operator.BlockOperator" 
+        	blockstart="@blockstart.t:dna" 
+        	blockend="@blockend.t:dna" 
+        	blockcount="@blockcount.t:dna" 
+        	weight="3.0"/>
+<!-->
+        <operator id="blockStartScaler.t:dna" spec="kernel.BactrianScaleOperator" parameter="@blockstart.t:dna" weight="3.0"/>
+        <operator id="blockEndScaler.t:dna" spec="kernel.BactrianScaleOperator" parameter="@blockend.t:dna" weight="3.0"/>
+        <operator id="blockCountRandomWalker.t:dna" spec="IntRandomWalkOperator" windowSize="1" idref="@blockcount.t:dna" weight="3.0"/>
+-->        
+        <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="1000" sanitiseHeaders="true" sort="smart">
+            <log idref="prior"/>
+            <log idref="blockstart.t:dna"/>
+            <log idref="blockend.t:dna"/>
+            <log idref="blockcount.t:dna"/>
+        </logger>
+        <logger id="screenlog" spec="Logger" logEvery="1000000">
+            <log idref="prior"/>
+        </logger>
+
+    </run>
+
+</beast>

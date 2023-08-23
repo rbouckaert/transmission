@@ -63,15 +63,33 @@ public class InfectionMover extends Operator {
 		}
 	}
 
+	
+	enum segmentType {top, bottom, all};
+	class Segment {
+		int nodeNr;
+		double length;
+		segmentType type;
+		Segment(int nodeNr, double length, segmentType type) {
+			this.nodeNr = nodeNr;
+			this.length = length;
+			this.type = type;
+		}
+	}
+	
 	private double moveInfectionAtBottomOfSegment(int i) {
+		// 2. determine segment
+		List<Segment> segments = getSegments(i);
+		int parent = tree.getNode(i).getParent().getNr();
+		int parentColour = likelihood.getColour(parent);
+		segments.addAll(getSegments(parentColour));
+
 		// 1. remove infection & remove uniformly part of block at top
 		blockCount.setValue(i, blockCount.getValue(i) - 1);
-		double newBlockStartFraction = blockEndFraction.getValue(i) - Randomizer.nextDouble() * (blockEndFraction.getValue(i) -blockStartFraction.getValue(i));
+		double newBlockStartFraction = blockEndFraction.getValue(i) - Randomizer.nextDouble() * (blockEndFraction.getValue(i) - blockStartFraction.getValue(i));
 		blockStartFraction.setValue(i, newBlockStartFraction);
-		// 2. determine segment
-		todo
+		
 		// 3. insert randomly in segment
-		todo
+		insertInfectionIntoSegments(segments);
 		return 0;
 	}
 
@@ -81,9 +99,9 @@ public class InfectionMover extends Operator {
 		double newBlockEndFraction = blockStartFraction.getValue(i) + Randomizer.nextDouble() * (blockEndFraction.getValue(i) -blockStartFraction.getValue(i));
 		blockEndFraction.setValue(i, newBlockEndFraction);
 		// 2. determine segment
-		todo
+		List<Segment> segments = getSegments(i);
 		// 3. insert randomly in segment
-		todo
+		insertInfectionIntoSegments(segments);
 		return 0;
 	}
 
@@ -92,10 +110,67 @@ public class InfectionMover extends Operator {
 		// 1. remove infection
 		blockCount.setValue(i, -1);
 		// 2. determine segment
-		todo
+		List<Segment> segments = getSegments(i);
 		// 3. insert randomly in segment
-		todo
+		insertInfectionIntoSegments(segments);
 		return 0;
+	}
+
+	private List<Segment> getSegments(int i) {
+		List<Segment> list = new ArrayList<>();
+		for (int j = 0; j < colourAtBase.length; j++) {
+			if (colourAtBase[j] == i) {
+				if (blockCount.getValue(j) == -1) {
+					list.add(new Segment(j, tree.getNode(j).getLength(), segmentType.all));
+				} else {
+					list.add(new Segment(j, tree.getNode(j).getLength() * blockStartFraction.getValue(i), segmentType.bottom));
+				}
+				if (!tree.getNode(i).isLeaf()) {
+					Node right = tree.getNode(i).getRight();
+					int rightIndex = right.getNr();
+					if (blockCount.getValue(rightIndex) != -1) {
+						list.add(new Segment(j, right.getLength() * (1.0-blockEndFraction.getValue(rightIndex)), segmentType.top));					
+					}
+					Node left = tree.getNode(i).getLeft();
+					int leftIndex = left.getNr();
+					if (blockCount.getValue(leftIndex) != -1) {
+						list.add(new Segment(j, left.getLength() * (1.0-blockEndFraction.getValue(leftIndex)), segmentType.top));					
+					}
+				}
+			}
+		}
+		return list;
+	}
+
+	private void insertInfectionIntoSegments(List<Segment> segments) {
+		double length = 0;
+		for (Segment segment : segments) {
+			length += segment.length;
+		}
+		double r = Randomizer.nextDouble() * length;
+		for (Segment segment : segments) {
+			if (segment.length > r) {
+				blockCount.setValue(segment.nodeNr, blockCount.getValue(segment.nodeNr) + 1);
+				switch (segment.type) {
+				case top:
+					blockStartFraction.setValue(segment.nodeNr, r / segment.length);
+					break;
+				case bottom:
+					blockEndFraction.setValue(segment.nodeNr, r / segment.length);
+					break;
+				case all:
+					if (blockCount.getValue(segment.nodeNr) != 0) {
+						throw new RuntimeException("Expected block count to be 0");
+					}
+					blockStartFraction.setValue(segment.nodeNr, r / segment.length);
+					blockEndFraction.setValue(segment.nodeNr, r / segment.length);
+					break;
+				}
+				return;
+			}
+			r = r - segment.length;
+		}
+		throw new RuntimeException("Progammer error 2: should never get here");
 	}
 
 	private double moveInfectionOnBorderOfTwoSampledColours(int i, Node parent) {
@@ -146,7 +221,7 @@ public class InfectionMover extends Operator {
 			int j = blockCount.getValue(i);
 			if (j == 0) {
 				k--;
-				if (k == 0) {
+				if (k <= 0) {
 					topOfBlock[0] = true;
 					return i;
 				}

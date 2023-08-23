@@ -39,6 +39,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     final public Input<HazardFunction> samplingHazardInput = new Input<>("samplingHazard", "determines the hazard of being sampled", Validate.REQUIRED);
     final public Input<HazardFunction> transmissionHazardInput = new Input<>("transmissionHazard", "determines the hazard of transmitting an infection", Validate.REQUIRED);
     
+    final public Input<Boolean> colourOnlyInput = new Input<>("colourOnly", "flag for debugging that calculates colour at base only, but does not contribute to posterior otherwise", false);
     
     
     
@@ -117,6 +118,10 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	
     	if (!calcColourAtBase()) {
     		logP = Double.NEGATIVE_INFINITY;
+    		return logP;
+    	}
+    	
+    	if (colourOnlyInput.get()) {
     		return logP;
     	}
     	

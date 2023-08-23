@@ -35,7 +35,7 @@ name="alignment">
     <map name="InverseGamma" >beast.base.inference.distribution.InverseGamma</map>
 
     <map name="OneOnX" >beast.base.inference.distribution.OneOnX</map>
-
+    
     <run id="mcmc" spec="MCMC" chainLength="10000000">
         <state id="state" spec="State" storeEvery="5000">
             <tree id="Tree.t:dna" spec="beast.base.evolution.tree.Tree" name="stateNode">
@@ -68,16 +68,17 @@ name="alignment">
                 
                 <!-- transmission likelihood -->
                 <distribution id="transmissionLikelihood.t:dna" spec="transmission.distribution.TransmissionTreeLikelihood">
+                	<tree idref="Tree.t:dna"/>
                 	<blockstart id="blockstart.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
                 	<blockend   id="blockend.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
                 	<blockcount id="blockcount.t:dna" spec="parameter.IntegerParameter" value="0" lower="-1"/>
 		            <populationModel id="ConstantTransmissionPopulation.t:dna" spec="ConstantPopulation">
         		        <parameter id="transmissionPopSize.t:dna" spec="parameter.RealParameter" name="popSize">1.0</parameter>
 		            </populationModel>
-		            <endTime  id="endTime.t:dna" spec="parameter.IntegerParameter" value="0"/>
-		            <lambda   id="lambda.t:dna" spec="parameter.IntegerParameter" value="4"/>
-		            <samplingHazard id="samplingHazard.t:dna" spec="transmission.distribution.GammaHazardFunction" scale="2.0" rate="10.0" C="1.0"/>
-		            <transmissionHazard id="transmissionHazard.t:dna" spec="transmission.distribution.GammaHazardFunction" scale="2.0" rate="10.0" C="1.5"/>
+		            <endTime  id="endTime.t:dna" spec="parameter.RealParameter" value="0"/>
+		            <lambda   id="lambda.t:dna" spec="parameter.RealParameter" value="4"/>
+		            <samplingHazard id="samplingHazard.t:dna" spec="transmission.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.0"/>
+		            <transmissionHazard id="transmissionHazard.t:dna" spec="transmission.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.5"/>
                 </distribution>
                 
                 <prior id="KappaPrior.s:dna" name="distribution" x="@kappa.s:dna">

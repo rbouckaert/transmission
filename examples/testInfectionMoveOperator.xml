@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.base.evolution.alignment:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="" version="2.7">
+
+    <map name="Uniform" >beast.base.inference.distribution.Uniform</map>
+    <map name="prior" >beast.base.inference.distribution.Prior</map>
+
+ 	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' newick='((((human:0.02096625515232275,(chimp:0.014857143159686462,bonobo:0.014857143159686462):0.0061091119926362895):0.012862878672687175,gorilla:0.033829133825009926):0.029471223948245952,orangutan:0.06330035777325588):0.0031773962188650223,siamang:0.0664777539921209)'/>
+
+
+
+    <run id="mcmc" spec="MCMC" chainLength="10000000">
+        <state id="state" spec="State" storeEvery="5000">
+			<!-- estimated transmission parameters -->
+            <stateNode idref="blockstart.t:dna"/>
+            <stateNode idref="blockend.t:dna"/>
+            <stateNode idref="blockcount.t:dna"/>
+        </state>
+        
+        <distribution id="prior" spec="CompoundDistribution">
+                <!-- transmission likelihood -->
+                <distribution id="transmissionLikelihood.t:dna" spec="transmission.distribution.TransmissionTreeLikelihood" colourOnly="true">
+                	<tree idref="Tree.t:dna"/>
+                	<blockstart id="blockstart.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
+                	<blockend   id="blockend.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
+                	<blockcount id="blockcount.t:dna" spec="parameter.IntegerParameter" value="0" lower="-1"/>
+		            <populationModel id="ConstantTransmissionPopulation.t:dna" spec="ConstantPopulation">
+        		        <parameter id="transmissionPopSize.t:dna" spec="parameter.RealParameter" name="popSize">1.0</parameter>
+		            </populationModel>
+		            <endTime  id="endTime.t:dna" spec="parameter.RealParameter" value="0"/>
+		            <lambda   id="lambda.t:dna" spec="parameter.RealParameter" value="4"/>
+		            <samplingHazard id="samplingHazard.t:dna" spec="transmission.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.0"/>
+		            <transmissionHazard id="transmissionHazard.t:dna" spec="transmission.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.5"/>
+                </distribution>
+
+            <prior name="distribution" id="BlockCountPrior.s:dna" x="@blockcount.t:dna">
+                <Uniform name="distr" lower="-1" upper="3"/>
+            </prior>
+            <prior name="distribution" id="BlockStartPrior.s:dna" x="@blockstart.t:dna">
+                <Uniform name="distr" lower="0" upper="1"/>
+            </prior>
+            <prior name="distribution" id="BlockEndPrior.s:dna" x="@blockend.t:dna">
+                <Uniform name="distr" lower="0" upper="1"/>
+            </prior>
+        </distribution>
+        
+		<!-- estimated transmission parameters -->
+        <operator id="InfectionMover.t:dna" spec="transmission.operator.InfectionMover" 
+        	blockstart="@blockstart.t:dna" 
+        	blockend="@blockend.t:dna" 
+        	blockcount="@blockcount.t:dna" 
+        	likelihood="@transmissionLikelihood.t:dna"
+        	weight="3.0"/>
+
+        <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="1000" sanitiseHeaders="true" sort="smart">
+            <log idref="prior"/>
+            <log idref="blockstart.t:dna"/>
+            <log idref="blockend.t:dna"/>
+            <log idref="blockcount.t:dna"/>
+        </logger>
+        <logger id="screenlog" spec="Logger" logEvery="1000000">
+            <log idref="prior"/>
+        </logger>
+
+    </run>
+
+</beast>

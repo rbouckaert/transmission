@@ -1,5 +1,6 @@
 package transmission.operator;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,12 +8,14 @@ import beast.base.core.Description;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
 import beast.base.evolution.tree.Node;
+import beast.base.evolution.tree.Tree;
 import beast.base.evolution.tree.TreeInterface;
 import beast.base.inference.Operator;
 import beast.base.inference.parameter.IntegerParameter;
 import beast.base.inference.parameter.RealParameter;
 import beast.base.util.Randomizer;
 import transmission.distribution.TransmissionTreeLikelihood;
+import transmission.distribution.Validator;
 
 @Description("Operator that randomly picks an infection and moves it elsewhere")
 public class InfectionMover extends Operator {
@@ -39,6 +42,16 @@ public class InfectionMover extends Operator {
 
 	@Override
 	public double proposal() {
+		double logHR = doproposal();
+		colourAtBase = likelihood.getColouring();
+		Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
+		if (!validator.isValid(colourAtBase)) {
+			System.err.println("Invalid state proposed");
+		}
+		return logHR;
+	}
+	
+	private double doproposal() {
 		colourAtBase = likelihood.getColouring();
 		int leafCount = tree.getLeafNodeCount();
 		
@@ -166,19 +179,20 @@ public class InfectionMover extends Operator {
 		for (Segment segment : segments) {
 			if (segment.length > r) {
 				blockCount.setValue(segment.nodeNr, blockCount.getValue(segment.nodeNr) + 1);
+				Node node = tree.getNode(segment.nodeNr);
 				switch (segment.type) {
 				case top:
-					blockStartFraction.setValue(segment.nodeNr, r / segment.length);
+					blockEndFraction.setValue(segment.nodeNr, 1.0 - r / node.getLength());
 					break;
 				case bottom:
-					blockEndFraction.setValue(segment.nodeNr, r / segment.length);
+					blockStartFraction.setValue(segment.nodeNr, r / node.getLength());
 					break;
 				case all:
 					if (blockCount.getValue(segment.nodeNr) != 0) {
 						throw new RuntimeException("Expected block count to be 0");
 					}
-					blockStartFraction.setValue(segment.nodeNr, r / segment.length);
-					blockEndFraction.setValue(segment.nodeNr, r / segment.length);
+					blockStartFraction.setValue(segment.nodeNr, r / node.getLength());
+					blockEndFraction.setValue(segment.nodeNr, r / node.getLength());
 					break;
 				}
 				return length;

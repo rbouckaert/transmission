@@ -101,11 +101,18 @@ public class InfectionMover extends Operator {
 		int parentColour = colourAtBase[parent];
 		List<Segment> segments = getSegments(parentColour);
 		
-		// 1. remove infection & remove uniformly part of block at top
+		// 1. remove infection & remove uniformly part of block at end
 		blockCount.setValue(i, blockCount.getValue(i) - 1);
-		double newBlockStartFraction = blockEndFraction.getValue(i) - Randomizer.nextDouble() * (blockEndFraction.getValue(i) - blockStartFraction.getValue(i));
-		double deltaLength = newBlockStartFraction - blockStartFraction.getValue(i);
-		blockStartFraction.setValue(i, newBlockStartFraction);
+		double deltaLength = 0;
+		if (blockCount.getValue(i) == 0) {
+			deltaLength = blockEndFraction.getValue(i) - blockStartFraction.getValue(i);
+			blockEndFraction.setValue(i, blockStartFraction.getValue(i));
+			
+		} else {
+			double newBlockStartFraction = blockEndFraction.getValue(i) - Randomizer.nextDouble() * (blockEndFraction.getValue(i) - blockStartFraction.getValue(i));
+			deltaLength = newBlockStartFraction - blockEndFraction.getValue(i);
+			blockEndFraction.setValue(i, newBlockStartFraction);
+		}
 
 		// 3. insert randomly in segment
 		double length = insertInfectionIntoSegments(segments);
@@ -116,11 +123,17 @@ public class InfectionMover extends Operator {
 		// 2. determine segment
 		List<Segment> segments = getSegments(colourAtBase[i]);
 		
-		// 1. remove infection & remove uniformly part of block at top
+		// 1. remove infection & remove uniformly part of block at start
 		blockCount.setValue(i, blockCount.getValue(i) - 1);
-		double newBlockEndFraction = blockStartFraction.getValue(i) + Randomizer.nextDouble() * (blockEndFraction.getValue(i) -blockStartFraction.getValue(i));
-		double deltaLength = blockEndFraction.getValue(i) - newBlockEndFraction;
-		blockEndFraction.setValue(i, newBlockEndFraction);
+		double deltaLength = 0;
+		if (blockCount.getValue(i) == 0) {
+			deltaLength = blockEndFraction.getValue(i) - blockStartFraction.getValue(i);
+			blockStartFraction.setValue(i, blockEndFraction.getValue(i));
+		} else {
+			double newBlockEndFraction = blockStartFraction.getValue(i) + Randomizer.nextDouble() * (blockEndFraction.getValue(i) -blockStartFraction.getValue(i));
+			deltaLength = blockStartFraction.getValue(i) - newBlockEndFraction;
+			blockStartFraction.setValue(i, newBlockEndFraction);
+		}
 		
 		// 3. insert randomly in segment
 		double length = insertInfectionIntoSegments(segments);

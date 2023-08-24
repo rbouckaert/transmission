@@ -7,14 +7,17 @@ import java.util.Set;
 import beast.base.evolution.tree.Node;
 import beast.base.evolution.tree.Tree;
 import beast.base.inference.parameter.IntegerParameter;
+import beast.base.inference.parameter.RealParameter;
 
 /** make sure a valid colouring/blockcount assignment is done **/
 public class Validator {
 
-	public Validator(Tree tree, int [] colourAtBase, IntegerParameter blockCount) {
+	public Validator(Tree tree, int [] colourAtBase, IntegerParameter blockCount, RealParameter blockStartFraction, RealParameter blockEndFraction) {
 		this.tree = tree;
 		this.colourAtBase = colourAtBase;
 		this.blockCount = blockCount;
+		this.blockStartFraction = blockStartFraction;
+	    this.blockEndFraction = blockEndFraction; 
 	}
 
 	private boolean [] nodesTraversed;
@@ -23,6 +26,8 @@ public class Validator {
     private Tree tree;
     private int [] colourAtBase;
     private IntegerParameter blockCount;
+    private RealParameter blockStartFraction;
+    private RealParameter blockEndFraction;
     
 	/** check whether the colouring is valid, that is
 	 * o each leaf i has colour i
@@ -39,11 +44,27 @@ public class Validator {
 		
 		// each branch with blockcount > 0 has different colour at base than at parent
 		for (int i = 0; i < tree.getLeafNodeCount() - 1; i++) {
-			if (blockCount.getValue(i) > 0) {
+			if (blockCount.getValue(i) >= 0) {
 				Node node = tree.getNode(i);
 				int baseColour = colourAtBase[node.getNr()];
 				int parentColour = colourAtBase[node.getParent().getNr()];
 				if (baseColour == parentColour) {
+					return false;
+				}
+			}
+		}
+		
+		// each block of size 0 has no length and of size > 0 has positive length
+		for (int i = 0; i < tree.getLeafNodeCount() - 1; i++) {
+			double start = blockStartFraction.getValue(i);
+			double end = blockEndFraction.getValue(i);
+			if (blockCount.getValue(i) == 0) {
+				if (Math.abs(end-start) > 1e-6) {
+					return false;
+				}
+			}
+			if (blockCount.getValue(i) > 0) {
+				if (end-start < 0) {
 					return false;
 				}
 			}
@@ -78,11 +99,11 @@ public class Validator {
 
 		// do not allow infections after sampling
 		// so coloured tree does not exceed sampling time
-		if (!allowInfectionsAfterSampling) {
-			for (int i = 0; i < tree.getLeafNodeCount(); i++) {
-				xx
-			}
-		}
+//		if (!allowInfectionsAfterSampling) {
+//			for (int i = 0; i < tree.getLeafNodeCount(); i++) {
+//				xx
+//			}
+//		}
 	
 		return true;
 	}

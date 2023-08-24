@@ -78,18 +78,20 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	sanityCheck(blockStartFraction, n-1 , "blockStart");
     	sanityCheck(blockEndFraction, n-1, "blockEnd");
 
-    	if (blockCount.getDimension() != n-1) {
-    		blockCount.setDimension(n-1);
-    		Log.warning("WARNING: Setting dimension of blockCount parameter " + blockCount.getID() + " to " + (n-1));
+    	if (blockCount.getDimension() != n) {
+    		blockCount.setDimension(n);
+    		// no transmission at root
+    		blockCount.setValue(n-1, -1);
+    		Log.warning("WARNING: Setting dimension of blockCount parameter " + blockCount.getID() + " to " + n);
     	}
-		if (blockCount.getLower() < 0) {
-			blockCount.setLower(0);
-    		Log.warning("WARNING: Setting lower bound of blockCount parameter " + blockCount.getID() + " to 0");
+		if (blockCount.getLower() < -1) {
+			blockCount.setBounds(-1, blockCount.getUpper());
+    		Log.warning("WARNING: Setting lower bound of blockCount parameter " + blockCount.getID() + " to -1");
 		}
 		    	
     	popSizeFunction = popSizeInput.get();
     	
-    	validator = new Validator(tree, colourAtBase, blockCount);    	
+    	validator = new Validator(tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);    	
 
     	endTime = endTimeInput.get();
 		lambda_tr = lambdaTrInput.get();
@@ -121,15 +123,15 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		return logP;
     	}
     	
-    	if (colourOnlyInput.get()) {
-    		return logP;
-    	}
-    	
     	if (!validator.isValid(colourAtBase)) {
     		logP = Double.NEGATIVE_INFINITY;
     		return logP;
     	}
-    	
+
+    	if (colourOnlyInput.get()) {
+    		return logP;
+    	}
+
     	logP = calculateCoalescent();
     	logP += calcTransmissionLikelihood();
     	return logP;

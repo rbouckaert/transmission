@@ -42,6 +42,7 @@ public class InfectionMover extends Operator {
 		colourAtBase = likelihood.getColouring();
 		int leafCount = tree.getLeafNodeCount();
 		
+		// TODO: candidate set may change after moving the infection, so the HR must include that information		
 		boolean [] topOfBlock = new boolean[1];
 		int i = randomlySelectInfection(topOfBlock);
 		int bc = blockCount.getValue(Math.abs(i));
@@ -74,45 +75,59 @@ public class InfectionMover extends Operator {
 			this.length = length;
 			this.type = type;
 		}
+		
+		@Override
+		public String toString() {
+			return  nodeNr + ":" + type;
+		}
 	}
 	
-	private double moveInfectionAtBottomOfSegment(int i) {
+	private double moveInfectionAtTopOfSegment(int i) {
 		// 2. determine segment
-		List<Segment> segments = getSegments(i);
 		int parent = tree.getNode(i).getParent().getNr();
-		int parentColour = likelihood.getColour(parent);
-		segments.addAll(getSegments(parentColour));
-
+		int parentColour = colourAtBase[parent];
+		List<Segment> segments = getSegments(parentColour);
+		
 		// 1. remove infection & remove uniformly part of block at top
 		blockCount.setValue(i, blockCount.getValue(i) - 1);
 		double newBlockStartFraction = blockEndFraction.getValue(i) - Randomizer.nextDouble() * (blockEndFraction.getValue(i) - blockStartFraction.getValue(i));
+		double deltaLength = newBlockStartFraction - blockStartFraction.getValue(i);
 		blockStartFraction.setValue(i, newBlockStartFraction);
-		
+
 		// 3. insert randomly in segment
-		insertInfectionIntoSegments(segments);
-		return 0;
+		double length = insertInfectionIntoSegments(segments);
+		return (length + deltaLength)/length;
 	}
 
-	private double moveInfectionAtTopOfSegment(int i) {
+	private double moveInfectionAtBottomOfSegment(int i) {
+		// 2. determine segment
+		List<Segment> segments = getSegments(colourAtBase[i]);
+		
 		// 1. remove infection & remove uniformly part of block at top
 		blockCount.setValue(i, blockCount.getValue(i) - 1);
 		double newBlockEndFraction = blockStartFraction.getValue(i) + Randomizer.nextDouble() * (blockEndFraction.getValue(i) -blockStartFraction.getValue(i));
+		double deltaLength = blockEndFraction.getValue(i) - newBlockEndFraction;
 		blockEndFraction.setValue(i, newBlockEndFraction);
-		// 2. determine segment
-		List<Segment> segments = getSegments(i);
+		
 		// 3. insert randomly in segment
-		insertInfectionIntoSegments(segments);
-		return 0;
+		double length = insertInfectionIntoSegments(segments);
+		return (length + deltaLength)/length;
 	}
 
 	// infection is on border of at least one unsampled colour
 	private double moveInfectionAtSegment(int i) {
+		// 2. determine segment
+		List<Segment> segments = getSegments(colourAtBase[i]);
+		int parent = tree.getNode(i).getParent().getNr();
+		int parentColour = colourAtBase[parent];
+		segments.addAll(getSegments(parentColour));
+
 		// 1. remove infection
 		blockCount.setValue(i, -1);
-		// 2. determine segment
-		List<Segment> segments = getSegments(i);
+
 		// 3. insert randomly in segment
 		insertInfectionIntoSegments(segments);
+		
 		return 0;
 	}
 
@@ -129,12 +144,12 @@ public class InfectionMover extends Operator {
 					Node right = tree.getNode(i).getRight();
 					int rightIndex = right.getNr();
 					if (blockCount.getValue(rightIndex) != -1) {
-						list.add(new Segment(j, right.getLength() * (1.0-blockEndFraction.getValue(rightIndex)), segmentType.top));					
+						list.add(new Segment(right.getNr(), right.getLength() * (1.0-blockEndFraction.getValue(rightIndex)), segmentType.top));					
 					}
 					Node left = tree.getNode(i).getLeft();
 					int leftIndex = left.getNr();
 					if (blockCount.getValue(leftIndex) != -1) {
-						list.add(new Segment(j, left.getLength() * (1.0-blockEndFraction.getValue(leftIndex)), segmentType.top));					
+						list.add(new Segment(left.getNr(), left.getLength() * (1.0-blockEndFraction.getValue(leftIndex)), segmentType.top));					
 					}
 				}
 			}
@@ -142,7 +157,7 @@ public class InfectionMover extends Operator {
 		return list;
 	}
 
-	private void insertInfectionIntoSegments(List<Segment> segments) {
+	private double insertInfectionIntoSegments(List<Segment> segments) {
 		double length = 0;
 		for (Segment segment : segments) {
 			length += segment.length;
@@ -166,7 +181,7 @@ public class InfectionMover extends Operator {
 					blockEndFraction.setValue(segment.nodeNr, r / segment.length);
 					break;
 				}
-				return;
+				return length;
 			}
 			r = r - segment.length;
 		}
@@ -291,7 +306,7 @@ public class InfectionMover extends Operator {
 	        }
         }
         // remove MRCA itself
-        path.remove(n1);
+        while (path.remove(n1)) {}
         return path;
     }
 

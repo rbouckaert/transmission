@@ -638,7 +638,12 @@ System.err.println("\n#contribution of cases in blocks");
 		}
 		return colourAtBase;
 	}
-	
+
+	public int [] getFreshColouring() {
+		calcColourAtBase();
+		return colourAtBase;
+	}
+
 	@Override
     public List<String> getConditions() {
         List<String> conditions = new ArrayList<>();

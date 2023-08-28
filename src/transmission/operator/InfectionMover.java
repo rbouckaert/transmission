@@ -43,9 +43,10 @@ public class InfectionMover extends Operator {
 	@Override
 	public double proposal() {
 		double logHR = doproposal();
-		colourAtBase = likelihood.getColouring();
+		colourAtBase = likelihood.getFreshColouring();
 		Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
 		if (!validator.isValid(colourAtBase)) {
+			validator.isValid(colourAtBase);
 			System.err.println("Invalid state proposed");
 		}
 		return logHR;
@@ -110,7 +111,7 @@ public class InfectionMover extends Operator {
 			
 		} else {
 			double newBlockStartFraction = blockEndFraction.getValue(i) - Randomizer.nextDouble() * (blockEndFraction.getValue(i) - blockStartFraction.getValue(i));
-			deltaLength = newBlockStartFraction - blockEndFraction.getValue(i);
+			deltaLength = blockEndFraction.getValue(i) - newBlockStartFraction;
 			blockEndFraction.setValue(i, newBlockStartFraction);
 		}
 
@@ -131,7 +132,7 @@ public class InfectionMover extends Operator {
 			blockStartFraction.setValue(i, blockEndFraction.getValue(i));
 		} else {
 			double newBlockEndFraction = blockStartFraction.getValue(i) + Randomizer.nextDouble() * (blockEndFraction.getValue(i) -blockStartFraction.getValue(i));
-			deltaLength = blockStartFraction.getValue(i) - newBlockEndFraction;
+			deltaLength = newBlockEndFraction - blockStartFraction.getValue(i);
 			blockStartFraction.setValue(i, newBlockEndFraction);
 		}
 		
@@ -157,22 +158,23 @@ public class InfectionMover extends Operator {
 		return 0;
 	}
 
-	private List<Segment> getSegments(int i) {
+	private List<Segment> getSegments(int colour) {
 		List<Segment> list = new ArrayList<>();
-		for (int j = 0; j < colourAtBase.length; j++) {
-			if (colourAtBase[j] == i) {
+		int n = tree.getNodeCount();
+		for (int j = 0; j < n; j++) {
+			if (colourAtBase[j] == colour) {
 				if (blockCount.getValue(j) == -1) {
 					list.add(new Segment(j, tree.getNode(j).getLength(), segmentType.all));
 				} else {
-					list.add(new Segment(j, tree.getNode(j).getLength() * blockStartFraction.getValue(i), segmentType.bottom));
+					list.add(new Segment(j, tree.getNode(j).getLength() * blockStartFraction.getValue(j), segmentType.bottom));
 				}
-				if (!tree.getNode(i).isLeaf()) {
-					Node right = tree.getNode(i).getRight();
+				if (!tree.getNode(j).isLeaf()) {
+					Node right = tree.getNode(j).getRight();
 					int rightIndex = right.getNr();
 					if (blockCount.getValue(rightIndex) != -1) {
 						list.add(new Segment(right.getNr(), right.getLength() * (1.0-blockEndFraction.getValue(rightIndex)), segmentType.top));					
 					}
-					Node left = tree.getNode(i).getLeft();
+					Node left = tree.getNode(j).getLeft();
 					int leftIndex = left.getNr();
 					if (blockCount.getValue(leftIndex) != -1) {
 						list.add(new Segment(left.getNr(), left.getLength() * (1.0-blockEndFraction.getValue(leftIndex)), segmentType.top));					
@@ -196,9 +198,15 @@ public class InfectionMover extends Operator {
 				switch (segment.type) {
 				case top:
 					blockEndFraction.setValue(segment.nodeNr, 1.0 - r / node.getLength());
+					if (blockCount.getValue(segment.nodeNr) == 0) {
+						blockStartFraction.setValue(segment.nodeNr, 1.0 - r / node.getLength());
+					}
 					break;
 				case bottom:
 					blockStartFraction.setValue(segment.nodeNr, r / node.getLength());
+					if (blockCount.getValue(segment.nodeNr) == 0) {
+						blockEndFraction.setValue(segment.nodeNr, r / node.getLength());
+					}
 					break;
 				case all:
 					if (blockCount.getValue(segment.nodeNr) != 0) {

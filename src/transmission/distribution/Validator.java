@@ -55,7 +55,7 @@ public class Validator {
 		}
 		
 		// each block of size 0 has no length and of size > 0 has positive length
-		for (int i = 0; i < tree.getLeafNodeCount() - 1; i++) {
+		for (int i = 0; i < tree.getNodeCount() - 1; i++) {
 			double start = blockStartFraction.getValue(i);
 			double end = blockEndFraction.getValue(i);
 			if (blockCount.getValue(i) == 0) {
@@ -68,7 +68,7 @@ public class Validator {
 					return false;
 				}
 			}
-		}
+		}		
 		
 		// each coloured segment is connected
 		List<Node> [] segments = new List[tree.getNodeCount()];

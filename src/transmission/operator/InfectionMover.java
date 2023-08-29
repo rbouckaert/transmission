@@ -8,7 +8,6 @@ import beast.base.core.Description;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
 import beast.base.evolution.tree.Node;
-import beast.base.evolution.tree.Tree;
 import beast.base.evolution.tree.TreeInterface;
 import beast.base.inference.Operator;
 import beast.base.inference.parameter.IntegerParameter;
@@ -16,6 +15,7 @@ import beast.base.inference.parameter.RealParameter;
 import beast.base.util.Randomizer;
 import transmission.distribution.TransmissionTreeLikelihood;
 import transmission.distribution.Validator;
+import transmission.logger.ColouredTreeLogger;
 
 @Description("Operator that randomly picks an infection and moves it elsewhere")
 public class InfectionMover extends Operator {
@@ -44,21 +44,46 @@ public class InfectionMover extends Operator {
 	public double proposal() {
 		double logHR = doproposal();
 		colourAtBase = likelihood.getFreshColouring();
-		Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
-		if (!validator.isValid(colourAtBase)) {
-			validator.isValid(colourAtBase);
-			System.err.println("Invalid state proposed");
+		
+//		Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
+//		if (!validator.isValid(colourAtBase)) {
+//			validator.isValid(colourAtBase);
+//			System.err.println("Invalid state proposed");
+//		}
+		
+		// candidate set of infections to move may change after moving the infection, 
+		// so the HR must include that information		
+		// Therefore, we determine number of eligible infections after proposal
+		int afterEligbleInfectionCount = 1;
+		for (int i : blockCount.getValues()) {
+			if (i == 0) {
+				afterEligbleInfectionCount += 1;
+			} else if (i > 0) {
+				afterEligbleInfectionCount += 2;
+			}
 		}
+		logHR += Math.log(afterEligbleInfectionCount) - Math.log(eligbleInfectionCount);
+		
+		
+//		ColouredTreeLogger logger = new ColouredTreeLogger();
+//		logger.initByName("tree", tree, "blockcount", blockCount, "blockstart", blockStartFraction, "blockend", blockEndFraction);
+//		String newick = logger.toString();
+//		System.out.println(newick);
+		
 		return logHR;
 	}
 	
 	private double doproposal() {
 		colourAtBase = likelihood.getColouring();
 		int leafCount = tree.getLeafNodeCount();
-		
-		// TODO: candidate set may change after moving the infection, so the HR must include that information		
 		boolean [] topOfBlock = new boolean[1];
 		int i = randomlySelectInfection(topOfBlock);
+//System.out.println(i + " " + topOfBlock[0]);
+//if (i == 9) {
+//	System.out.println(topOfBlock[0]);
+//	int h = 3;
+//	h++;
+//}
 		int bc = blockCount.getValue(Math.abs(i));
 		if (bc == 0) {
 			Node parent = tree.getNode(i).getParent();
@@ -254,9 +279,10 @@ public class InfectionMover extends Operator {
 	// randomly pick an infection that can be moved (i.e. at top or bottom of a block, but not insider a block)
 	// returns node number with infection
 	// use topOfBlock to indicate using top of block (true), or for bottom of block (false)
+	private int eligbleInfectionCount = 0;
 	private int randomlySelectInfection(boolean [] topOfBlock) {
 		// 1. determine number of eligible infections 
-		int eligbleInfectionCount = 0;
+		eligbleInfectionCount = 1;
 		for (int i : blockCount.getValues()) {
 			if (i == 0) {
 				eligbleInfectionCount += 1;

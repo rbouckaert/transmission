@@ -3,7 +3,12 @@
     <map name="Uniform" >beast.base.inference.distribution.Uniform</map>
     <map name="prior" >beast.base.inference.distribution.Prior</map>
 
+<!--
+ 	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' newick='(chimp:0.1,bonobo:0.1)'/>
+ 	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' newick='(human:0.02096625515232275,(chimp:0.014857143159686462,bonobo:0.014857143159686462):0.0061091119926362895)'/>
  	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' newick='((((human:0.02096625515232275,(chimp:0.014857143159686462,bonobo:0.014857143159686462):0.0061091119926362895):0.012862878672687175,gorilla:0.033829133825009926):0.029471223948245952,orangutan:0.06330035777325588):0.0031773962188650223,siamang:0.0664777539921209)'/>
+-->
+ 	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' newick='((human:0.1,robot:0.1):0.1,(chimp:0.1,bonobo:0.1):0.1)'/>
 
 
 
@@ -58,6 +63,23 @@
         </logger>
         <logger id="screenlog" spec="Logger" logEvery="1000000">
             <log idref="prior"/>
+        </logger>
+
+        <logger id="treelogB.t:dna" spec="Logger" fileName="$(filebase)b.trees" logEvery="1000" mode="tree">
+            <log id="TreeWithMetaDataLoggerB.t:dna" spec="transmission.logger.ColouredTreeLogger" 
+            	tree="@Tree.t:dna" 
+            	blockstart="@blockstart.t:dna" 
+            	blockend="@blockend.t:dna"
+                blockcount="@blockcount.t:dna"/>
+        </logger>
+        
+        <logger id="treelog.t:dna" spec="Logger" fileName="$(filebase).trees" logEvery="1000" mode="tree">
+            <log id="TreeWithMetaDataLogger.t:dna" spec="beast.base.evolution.TreeWithMetaDataLogger" 
+            	tree="@Tree.t:dna">
+            	<metadata idref="blockstart.t:dna"/>
+            	<metadata idref="blockend.t:dna"/>
+                <metadata idref="blockcount.t:dna"/>
+            </log>
         </logger>
 
     </run>

@@ -11,6 +11,8 @@
         <provider classname="transmission.operator.BlockOperator"/>
         <provider classname="transmission.operator.InfectionMover"/>
         
+		<provider classname="transmission.logger.ColouredTreeLogger"/>
+		
         <provider classname="transmission.util.ColourLogger"/>
 	</service>    
 </addon>

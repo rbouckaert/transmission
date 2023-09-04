@@ -6,9 +6,9 @@
     <run id="mcmc" spec="MCMC" chainLength="10000000">
         <state id="state" spec="State" storeEvery="5000">
 			<!-- estimated transmission parameters -->
-            <stateNode id="blockstart.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
-            <stateNode id="blockend.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
-            <stateNode id="blockcount.t:dna" spec="parameter.IntegerParameter" value="0" lower="-1"/>
+            <stateNode id="blockstart.t:dna" spec="parameter.RealParameter" dimension="$(dim=2)" value="0.5" lower="0" upper="1.0"/>
+            <stateNode id="blockend.t:dna" spec="parameter.RealParameter" dimension="$(dim)" value="0.5" lower="0" upper="1.0"/>
+            <stateNode id="blockcount.t:dna" spec="parameter.IntegerParameter" dimension="$(dim)" value="0" lower="-1"/>
         </state>
         
         <distribution id="prior" spec="CompoundDistribution">
@@ -29,11 +29,7 @@
         	blockend="@blockend.t:dna" 
         	blockcount="@blockcount.t:dna" 
         	weight="3.0"/>
-<!-->
-        <operator id="blockStartScaler.t:dna" spec="kernel.BactrianScaleOperator" parameter="@blockstart.t:dna" weight="3.0"/>
-        <operator id="blockEndScaler.t:dna" spec="kernel.BactrianScaleOperator" parameter="@blockend.t:dna" weight="3.0"/>
-        <operator id="blockCountRandomWalker.t:dna" spec="IntRandomWalkOperator" windowSize="1" idref="@blockcount.t:dna" weight="3.0"/>
--->        
+
         <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="1000" sanitiseHeaders="true" sort="smart">
             <log idref="prior"/>
             <log idref="blockstart.t:dna"/>

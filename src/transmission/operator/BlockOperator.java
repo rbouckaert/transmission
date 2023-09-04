@@ -30,7 +30,7 @@ public class BlockOperator extends Operator {
 		int i = Randomizer.nextInt(blockStartFraction.getDimension());
 		
 		if (Randomizer.nextBoolean()) {
-			switch (blockCount.getValue()) {
+			switch (blockCount.getValue(i)) {
 			case -1:
 				// nothing to do since start and end fractions are ignored
 				break;
@@ -111,10 +111,10 @@ public class BlockOperator extends Operator {
 		default:
 			if (Randomizer.nextBoolean()) {
 				// remove infection
-				blockCount.setValue(i, blockCount.getValue()-1);
+				blockCount.setValue(i, blockCount.getValue(i)-1);
 			} else {
 				// add infection
-				blockCount.setValue(i, blockCount.getValue()+1);
+				blockCount.setValue(i, blockCount.getValue(i)+1);
 			}
 			double f = Randomizer.nextDouble();
 			double mid = (blockStartFraction.getValue(i) + blockEndFraction.getValue(i))/2.0;

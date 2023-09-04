@@ -13,6 +13,7 @@ public class BlockOperator extends Operator {
 	final public Input<RealParameter> blockStartFractionInput = new Input<>("blockstart", "start of block in fraction of branch length", Validate.REQUIRED);
     final public Input<RealParameter> blockEndFractionInput = new Input<>("blockend", "end of block in fraction of branch length", Validate.REQUIRED);
     final public Input<IntegerParameter> blockCountInput = new Input<>("blockcount", "number of transitions inside a block", Validate.REQUIRED);
+    final public Input<Boolean> keepConstantCountInput = new Input<>("keepconstantcount", "if true, for every deleting there is an insertion to keep total sum of block counts constant", false);
 
     private RealParameter blockStartFraction;
     private RealParameter blockEndFraction;
@@ -27,9 +28,10 @@ public class BlockOperator extends Operator {
 
 	@Override
 	public double proposal() {
-		int i = Randomizer.nextInt(blockStartFraction.getDimension());
 		
 		if (Randomizer.nextBoolean()) {
+			int i = Randomizer.nextInt(blockStartFraction.getDimension());
+			// only move start and end fraction but not block count
 			switch (blockCount.getValue(i)) {
 			case -1:
 				// nothing to do since start and end fractions are ignored
@@ -53,71 +55,101 @@ public class BlockOperator extends Operator {
 			return 0;
 		}
 		
+		if (keepConstantCountInput.get()) {
+			int i = Randomizer.nextInt(blockCount.getDimension());
+			if (blockCount.getValue(i) == -1) {
+				return -1;
+			}
+			double logHR = removeInfection(i);
+			i = Randomizer.nextInt(blockCount.getDimension());
+			logHR += insertInfection(i);
+if (blockCount.getValue(0) + blockCount.getValue(1) != 0) {
+	int h = 3;
+	h++;
+}
+			return logHR;
+		} else	if (Randomizer.nextBoolean()) {
+			int i = Randomizer.nextInt(blockCount.getDimension());
+			return removeInfection(i);
+		} else {
+			int i = Randomizer.nextInt(blockCount.getDimension());
+			return insertInfection(i);
+		}
 		
-		
+	}
+
+	private double insertInfection(int i) {
 		switch (blockCount.getValue(i)) {
 		case -1:
-			if (Randomizer.nextBoolean()) {
-				blockCount.setValue(i, 0);
-				double f = Randomizer.nextDouble();
-				blockStartFraction.setValue(i, f);
-				blockEndFraction.setValue(i, f);
-			} else {
-				// do nothing
-			}
-			break; 
+			blockCount.setValue(i, 0);
+			double f = Randomizer.nextDouble();
+			blockStartFraction.setValue(i, f);
+			blockEndFraction.setValue(i, f);
+			return 0;
 			
 		case 0:
-			if (Randomizer.nextBoolean()) {
-				// remove infection
-				blockCount.setValue(i, -1);
-				return Math.log(2.0);
-			} else {
-				// add infection
-				blockCount.setValue(i, 1);
+			// add infection
+			blockCount.setValue(i, 1);
 
-				double f = Randomizer.nextDouble();
-				double mid = blockStartFraction.getValue(i);
-				if (mid- f / 2.0 < 0 || mid + f / 2.0 > 1.0) {
-					return Double.NEGATIVE_INFINITY;
-				}
-				blockStartFraction.setValue(i, mid - f / 2.0);
-				blockEndFraction.setValue(i, mid + f / 2.0);
+			f = Randomizer.nextDouble();
+			double mid = blockStartFraction.getValue(i);
+			if (mid- f / 2.0 < 0 || mid + f / 2.0 > 1.0) {
+				return Double.NEGATIVE_INFINITY;
 			}
-			break;
+			blockStartFraction.setValue(i, mid - f / 2.0);
+			blockEndFraction.setValue(i, mid + f / 2.0);
+			return 0;
 			
 		case 1:
-			if (Randomizer.nextBoolean()) {
-				// remove infection
-				blockCount.setValue(i, 0);
-				double mid = (blockStartFraction.getValue(i) + blockEndFraction.getValue(i))/2.0;
-				blockStartFraction.setValue(i, mid);
-				blockEndFraction.setValue(i, mid);
-				return -Math.log(2.0);
-			} else {
-				// add infection
-				blockCount.setValue(i, 2);
+			// add infection
+			blockCount.setValue(i, 2);
 
-				double f = Randomizer.nextDouble();
-				double mid = (blockStartFraction.getValue(i) + blockEndFraction.getValue(i))/2.0;
-				if (mid- f / 2.0 < 0 || mid + f / 2.0 > 1.0) {
-					return Double.NEGATIVE_INFINITY;
-				}
-				blockStartFraction.setValue(i, mid - f / 2.0);
-				blockEndFraction.setValue(i, mid + f / 2.0);				
+			f = Randomizer.nextDouble();
+			mid = (blockStartFraction.getValue(i) + blockEndFraction.getValue(i))/2.0;
+			if (mid- f / 2.0 < 0 || mid + f / 2.0 > 1.0) {
+				return Double.NEGATIVE_INFINITY;
 			}
-			break;
+			blockStartFraction.setValue(i, mid - f / 2.0);
+			blockEndFraction.setValue(i, mid + f / 2.0);				
+			return Math.log(2.0);
 		
 		default:
-			if (Randomizer.nextBoolean()) {
-				// remove infection
-				blockCount.setValue(i, blockCount.getValue(i)-1);
-			} else {
-				// add infection
-				blockCount.setValue(i, blockCount.getValue(i)+1);
+			// add infection
+			blockCount.setValue(i, blockCount.getValue(i)+1);
+			f = Randomizer.nextDouble();
+			mid = (blockStartFraction.getValue(i) + blockEndFraction.getValue(i))/2.0;
+			if (mid- f / 2.0 < 0 || mid + f / 2.0 > 1.0) {
+				return Double.NEGATIVE_INFINITY;
 			}
-			double f = Randomizer.nextDouble();
+		}
+		return 0;
+		
+	}
+
+	private double removeInfection(int i) {
+		switch (blockCount.getValue(i)) {
+		case -1:
+			// do nothing
+			return 0; 
+			
+		case 0:
+			// remove infection
+			blockCount.setValue(i, -1);
+			return Math.log(2.0);
+			
+		case 1:
+			// remove infection
+			blockCount.setValue(i, 0);
 			double mid = (blockStartFraction.getValue(i) + blockEndFraction.getValue(i))/2.0;
+			blockStartFraction.setValue(i, mid);
+			blockEndFraction.setValue(i, mid);
+			return -Math.log(2.0);
+		
+		default:
+			// remove infection
+			blockCount.setValue(i, blockCount.getValue(i)-1);
+			double f = Randomizer.nextDouble();
+			mid = (blockStartFraction.getValue(i) + blockEndFraction.getValue(i))/2.0;
 			if (mid- f / 2.0 < 0 || mid + f / 2.0 > 1.0) {
 				return Double.NEGATIVE_INFINITY;
 			}

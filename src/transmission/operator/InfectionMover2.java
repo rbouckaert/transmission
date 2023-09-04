@@ -45,14 +45,17 @@ public class InfectionMover2 extends Operator {
 
     
     final static boolean debug = false;
+    int [][] stats = new int[3][3];
     
 	@Override
 	public double proposal() {
 		
-		//System.out.print(blockCount.getValue(0));
+		
+		int pre = blockCount.getValue(0);
 		double logHR = doproposal();
 		logHR = 0;
-		//System.out.println("=>" + blockCount.getValue(0));
+		int post = blockCount.getValue(0);
+		updateStats(pre, post);
 
 		if (debug) {
 			colourAtBase = likelihood.getFreshColouring();		
@@ -85,6 +88,23 @@ public class InfectionMover2 extends Operator {
 		return logHR;
 	}
 	
+	private void updateStats(int pre, int post) {
+		stats[1+pre][1+post]++;
+		if (stats[0][0] > 0 && (stats[0][0] + stats[0][1] + stats[1][0] + stats[1][1] + stats[1][2] + stats[2][1] + stats[2][2]) % 1000000 == 0) {
+			StringBuilder b = new StringBuilder();
+			b.append(stats[0][0] + " " + stats[0][1] + ";");
+			b.append(stats[1][0] + " " + stats[1][1] + " " + stats[1][2] + ";");
+			b.append(stats[2][1] + " " + stats[2][2] + ";");
+
+			b.append(stats[0][0] + stats[0][1] + " " );
+			b.append(stats[1][0] + stats[1][1] + stats[1][2]+ " " );
+			b.append(stats[2][1] + stats[2][2]);
+			b.append("\n");
+			
+			System.out.println(b.toString());
+		}
+	}
+
 	private double doproposal() {
 		colourAtBase = likelihood.getColouring();
 		int leafCount = tree.getLeafNodeCount();
@@ -222,6 +242,41 @@ public class InfectionMover2 extends Operator {
 			}
 		}
 		return list;
+	}
+
+	private double insertInfectionIntoSegments0(List<Segment> segments) {
+		// randomly select non-zero length segment
+		int i = Randomizer.nextInt(segments.size());
+		Segment segment = segments.get(i);
+		while (segment.length <= 0) {
+			i = Randomizer.nextInt(segments.size());
+			segment = segments.get(i);
+		}
+		double r = Randomizer.nextDouble() * segment.length;
+		blockCount.setValue(segment.nodeNr, blockCount.getValue(segment.nodeNr) + 1);
+		Node node = tree.getNode(segment.nodeNr);
+		switch (segment.type) {
+		case top:
+			blockEndFraction.setValue(segment.nodeNr, 1.0 - r / node.getLength());
+			if (blockCount.getValue(segment.nodeNr) == 0) {
+				blockStartFraction.setValue(segment.nodeNr, 1.0 - r / node.getLength());
+			}
+			break;
+		case bottom:
+			blockStartFraction.setValue(segment.nodeNr, r / node.getLength());
+			if (blockCount.getValue(segment.nodeNr) == 0) {
+				blockEndFraction.setValue(segment.nodeNr, r / node.getLength());
+			}
+			break;
+		case all:
+			if (blockCount.getValue(segment.nodeNr) != 0) {
+				throw new RuntimeException("Expected block count to be 0");
+			}
+			blockStartFraction.setValue(segment.nodeNr, r / node.getLength());
+			blockEndFraction.setValue(segment.nodeNr, r / node.getLength());
+			break;
+		}
+		return segment.length;
 	}
 
 	private double insertInfectionIntoSegments(List<Segment> segments) {

@@ -53,7 +53,7 @@ public class InfectionMover2 extends Operator {
 		
 		int pre = blockCount.getValue(0);
 		double logHR = doproposal();
-		logHR = 0;
+		// logHR = 0;
 		int post = blockCount.getValue(0);
 		updateStats(pre, post);
 
@@ -90,15 +90,20 @@ public class InfectionMover2 extends Operator {
 	
 	private void updateStats(int pre, int post) {
 		stats[1+pre][1+post]++;
-		if (stats[0][0] > 0 && (stats[0][0] + stats[0][1] + stats[1][0] + stats[1][1] + stats[1][2] + stats[2][1] + stats[2][2]) % 1000000 == 0) {
+		int total = stats[0][0] + stats[0][1] + stats[1][0] + stats[1][1] + stats[1][2] + stats[2][1] + stats[2][2];
+		if (stats[0][0] > 0 && (total) % 1000000 == 0) {
 			StringBuilder b = new StringBuilder();
-			b.append(stats[0][0] + " " + stats[0][1] + ";");
-			b.append(stats[1][0] + " " + stats[1][1] + " " + stats[1][2] + ";");
-			b.append(stats[2][1] + " " + stats[2][2] + ";");
+			double t = stats[0][0] + stats[0][1];
+			b.append(stats[0][0]/t + " " + stats[0][1]/t + ";");
+			t = stats[1][0] + stats[1][1] + stats[1][2];
+			b.append(stats[1][0]/t + " " + stats[1][1]/t + " " + stats[1][2]/t + ";");
+			t = stats[2][1] + stats[2][2];
+			b.append(stats[2][1]/t + " " + stats[2][2]/t + ";");
 
-			b.append(stats[0][0] + stats[0][1] + " " );
-			b.append(stats[1][0] + stats[1][1] + stats[1][2]+ " " );
-			b.append(stats[2][1] + stats[2][2]);
+			t = total;
+			b.append((stats[0][0] + stats[0][1])/t + " " );
+			b.append((stats[1][0] + stats[1][1] + stats[1][2])/t+ " " );
+			b.append((stats[2][1] + stats[2][2])/t);
 			b.append("\n");
 			
 			System.out.println(b.toString());
@@ -213,7 +218,7 @@ public class InfectionMover2 extends Operator {
 
 		// 3. insert randomly in segment
 		insertInfectionIntoSegments(segments);
-		
+
 		return 0;
 	}
 
@@ -244,7 +249,7 @@ public class InfectionMover2 extends Operator {
 		return list;
 	}
 
-	private double insertInfectionIntoSegments0(List<Segment> segments) {
+	private double insertInfectionIntoSegments(List<Segment> segments) {
 		// randomly select non-zero length segment
 		int i = Randomizer.nextInt(segments.size());
 		Segment segment = segments.get(i);
@@ -279,7 +284,7 @@ public class InfectionMover2 extends Operator {
 		return segment.length;
 	}
 
-	private double insertInfectionIntoSegments(List<Segment> segments) {
+	private double insertInfectionIntoSegments0(List<Segment> segments) {
 		double length = 0;
 		for (Segment segment : segments) {
 			length += segment.length;

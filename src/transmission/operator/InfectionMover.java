@@ -46,6 +46,7 @@ public class InfectionMover extends Operator {
 	@Override
 	public double proposal() {
 		//System.out.print(blockCount.getValue());
+		int pre = blockCount.getValue(0);
 		
 		// randomly pick two distinct leafs
 		int n = tree.getLeafNodeCount();
@@ -62,11 +63,18 @@ public class InfectionMover extends Operator {
 		removeInfectionFromPath(path);
 		insertInfectionToPath(path);
 		
+
+		
+		if (debug) {
+			int post = blockCount.getValue(0);
+			updateStats(pre, post);
+		}
 		
 		// make sure the colouring is valid
 		colourAtBase = likelihood.getFreshColouring();		
 		Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
 		if (!validator.isValid(colourAtBase)) {
+			System.err.println("x");
 			return Double.NEGATIVE_INFINITY;
 		}
 
@@ -75,6 +83,30 @@ public class InfectionMover extends Operator {
 		return 0;
 	}
 	
+	
+    int [][] stats = new int[3][3];
+	private void updateStats(int pre, int post) {
+		stats[1+pre][1+post]++;
+		int total = stats[0][0] + stats[0][1] + stats[1][0] + stats[1][1] + stats[1][2] + stats[2][1] + stats[2][2];
+		if (stats[0][0] > 0 && (total) % 1000000 == 0) {
+			StringBuilder b = new StringBuilder();
+			double t = stats[0][0] + stats[0][1];
+			b.append(stats[0][0]/t + " " + stats[0][1]/t + ";");
+			t = stats[1][0] + stats[1][1] + stats[1][2];
+			b.append(stats[1][0]/t + " " + stats[1][1]/t + " " + stats[1][2]/t + ";");
+			t = stats[2][1] + stats[2][2];
+			b.append(stats[2][1]/t + " " + stats[2][2]/t + ";");
+
+			t = total;
+			b.append((stats[0][0] + stats[0][1])/t + " " );
+			b.append((stats[1][0] + stats[1][1] + stats[1][2])/t+ " " );
+			b.append((stats[2][1] + stats[2][2])/t);
+			b.append("\n");
+			
+			System.out.println(b.toString());
+		}
+	}
+
 	private void removeInfectionFromPath(List<Node> path) {
 		// 1. determine number of eligible infections 
 		int eligbleInfectionCount = 0;
@@ -101,7 +133,7 @@ public class InfectionMover extends Operator {
 				}
 			} else if (bc > 0) {
 				k -= 2;
-				if (k < 0) {
+				if (k < -1) {
 					// remove from bottom of block
 					blockCount.setValue(node.getNr(), blockCount.getValue(node.getNr()) - 1);
 					if (blockCount.getValue(nodeNr) == 0) {
@@ -112,7 +144,7 @@ public class InfectionMover extends Operator {
 					}
 					return;
 				}
-				if (k < -1) {
+				if (k < 0) {
 					// remove from top of block
 					blockCount.setValue(node.getNr(), blockCount.getValue(node.getNr()) - 1);
 					if (blockCount.getValue(nodeNr) == 0) {
@@ -145,11 +177,11 @@ public class InfectionMover extends Operator {
 					blockEndFraction.setValue(nodeNr, r / node.getLength());
 					return;
 				} else { // blockCount > 0
-					if (blockStartFraction.getValue(nodeNr) > r) {
+					if (blockStartFraction.getValue(nodeNr) * node.getLength()> r) {
 						blockStartFraction.setValue(nodeNr, r / node.getLength());
 						return;
 					}
-					if (blockEndFraction.getValue(nodeNr) < r) {
+					if (blockEndFraction.getValue(nodeNr) * node.getLength() < r) {
 						blockEndFraction.setValue(nodeNr, r / node.getLength());						
 					}
 					// (blockStartFraction.getValue(nodeNr) < r && r < blockEndFraction.getValue(nodeNr))

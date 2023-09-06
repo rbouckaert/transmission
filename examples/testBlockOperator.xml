@@ -3,17 +3,19 @@
     <map name="Uniform" >beast.base.inference.distribution.Uniform</map>
     <map name="prior" >beast.base.inference.distribution.Prior</map>
 
+ 	<tree id='Tree.t:dna' spec='beast.base.evolution.tree.TreeParser' IsLabelledNewick='true' adjustTipHeights="false" newick='(chimp:0.1,bonobo:0.1)'/>
+
     <run id="mcmc" spec="MCMC" chainLength="10000000">
         <state id="state" spec="State" storeEvery="5000">
 			<!-- estimated transmission parameters -->
             <stateNode id="blockstart.t:dna" spec="parameter.RealParameter" dimension="$(dim=2)" value="0.5" lower="0" upper="1.0"/>
             <stateNode id="blockend.t:dna" spec="parameter.RealParameter" dimension="$(dim)" value="0.5" lower="0" upper="1.0"/>
-            <stateNode id="blockcount.t:dna" spec="parameter.IntegerParameter" dimension="$(dim)" value="0" lower="-1"/>
+            <stateNode id="blockcount.t:dna" spec="parameter.IntegerParameter" dimension="$(dim)" value="3 0" lower="-1"/>
         </state>
         
         <distribution id="prior" spec="CompoundDistribution">
             <prior name="distribution" id="BlockCountPrior.s:dna" x="@blockcount.t:dna">
-                <Uniform name="distr" lower="-1" upper="3"/>
+                <Uniform name="distr" lower="-1" upper="4"/>
             </prior>
             <prior name="distribution" id="BlockStartPrior.s:dna" x="@blockstart.t:dna">
                 <Uniform name="distr" lower="0" upper="1"/>
@@ -28,6 +30,7 @@
         	blockstart="@blockstart.t:dna" 
         	blockend="@blockend.t:dna" 
         	blockcount="@blockcount.t:dna" 
+        	tree="@Tree.t:dna"
         	weight="3.0"/>
 
         <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="1000" sanitiseHeaders="true" sort="smart">

@@ -37,34 +37,30 @@ public class BlockOperator extends Operator {
 
 	@Override
 	public double proposal() {
-//		if (Randomizer.nextBoolean()) {
-//			int i = Randomizer.nextInt(blockStartFraction.getDimension());
-//			// only move start and end fraction but not block count
-//			switch (blockCount.getValue(i)) {
-//			case -1:
-//				// nothing to do since start and end fractions are ignored
-//				break;
-//			case 0:
-//				// make sure start == end fraction after proposal
-//				double f = Randomizer.nextDouble();
-//				blockStartFraction.setValue(i, f);
-//				blockEndFraction.setValue(i, f);
-//				break;
-//			default:
-//				// boundary move only
-//				f = Randomizer.nextDouble();
-//				if (f < blockStartFraction.getValue(i)) {
-//					blockStartFraction.setValue(i, f);
-//				} else if (f > blockEndFraction.getValue(i)) {
-//					blockEndFraction.setValue(i, f);				
-//				} else if (Randomizer.nextBoolean()) {
-//					blockStartFraction.setValue(i, f);
-//				} else {
-//					blockEndFraction.setValue(i, f);					
-//				}
-//			}
-//			return 0;
-//		}
+		if (Randomizer.nextBoolean()) {
+			int i = Randomizer.nextInt(blockStartFraction.getDimension());
+			// only move start and end fraction but not block count
+			switch (blockCount.getValue(i)) {
+			case -1:
+				// nothing to do since start and end fractions are ignored
+				break;
+			case 0:
+				// make sure start == end fraction after proposal
+				double f = Randomizer.nextDouble();
+				blockStartFraction.setValue(i, f);
+				blockEndFraction.setValue(i, f);
+				break;
+			default:
+				// move one boundary only
+				f = Randomizer.nextDouble();
+				if (Randomizer.nextBoolean()) {
+					blockStartFraction.setValue(i, f * blockEndFraction.getValue(i));
+				} else {
+					blockEndFraction.setValue(i, 1-f * (1-blockStartFraction.getValue(i)));					
+				}
+			}
+			return 0;
+		}
 		
 		if (keepConstantCountInput.get()) {
 			int pre = blockCount.getValue(0);

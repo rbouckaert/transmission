@@ -111,51 +111,79 @@ public class InfectionMover extends Operator {
 		// 1. determine number of eligible infections 
 		int eligbleInfectionCount = 0;
 		for (Node node : path) {
-			int i = blockCount.getValue(node.getNr());
-			if (i == 0) {
-				eligbleInfectionCount += 1;
-			} else if (i > 0) {
-				eligbleInfectionCount += 2;
-			}
+			eligbleInfectionCount += blockCount.getValue(node.getNr()) + 1;
+//			int i = blockCount.getValue(node.getNr());
+//			if (i == 0) {
+//				eligbleInfectionCount += 1;
+//			} else if (i > 0) {
+//				eligbleInfectionCount += 2;
+//			}
 		}
 
 		// 2. pick one uniformly at random;
 		int k = Randomizer.nextInt(eligbleInfectionCount);
 		for (Node node : path) {
 			int nodeNr = node.getNr();
-			int bc = blockCount.getValue(nodeNr);
-			if (bc == 0) {
-				k--;
-				if (k < 0) {
-					// remove from top of block
-					blockCount.setValue(nodeNr, -1);
+			int bc = blockCount.getValue(nodeNr) + 1;
+			k -= bc;
+			if (k < 0) {
+				blockCount.setValue(node.getNr(), blockCount.getValue(node.getNr()) - 1);
+				if (blockCount.getValue(nodeNr) == -1) {
 					return;
 				}
-			} else if (bc > 0) {
-				k -= 2;
-				if (k < -1) {
-					// remove from bottom of block
-					blockCount.setValue(node.getNr(), blockCount.getValue(node.getNr()) - 1);
-					if (blockCount.getValue(nodeNr) == 0) {
-						blockStartFraction.setValue(nodeNr, blockEndFraction.getValue(nodeNr));						
-					} else if (blockCount.getValue(nodeNr) > 0) {
-						double newBlockStartFraction = blockStartFraction.getValue(nodeNr) + Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) -blockStartFraction.getValue(nodeNr));
-						blockStartFraction.setValue(nodeNr, newBlockStartFraction);
+				if (blockCount.getValue(nodeNr) == 0) {
+					if (Randomizer.nextBoolean()) {
+						blockStartFraction.setValue(nodeNr, blockEndFraction.getValue(nodeNr));
+					} else {
+						blockEndFraction.setValue(nodeNr, blockStartFraction.getValue(nodeNr));
+						
 					}
 					return;
 				}
-				if (k < 0) {
-					// remove from top of block
-					blockCount.setValue(node.getNr(), blockCount.getValue(node.getNr()) - 1);
-					if (blockCount.getValue(nodeNr) == 0) {
-						blockEndFraction.setValue(nodeNr, blockStartFraction.getValue(nodeNr));						
-					} else if (blockCount.getValue(nodeNr) > 0) {
-						double newBlockEndFraction = blockEndFraction.getValue(nodeNr) - Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) - blockStartFraction.getValue(nodeNr));
-						blockEndFraction.setValue(nodeNr, newBlockEndFraction);
-					}
-					return;
+				
+				// shrink the block
+				if (Randomizer.nextBoolean()) {
+					double newBlockStartFraction = blockStartFraction.getValue(nodeNr) + Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) -blockStartFraction.getValue(nodeNr));
+					blockStartFraction.setValue(nodeNr, newBlockStartFraction);
+				} else {
+					double newBlockEndFraction = blockEndFraction.getValue(nodeNr) - Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) - blockStartFraction.getValue(nodeNr));
+					blockEndFraction.setValue(nodeNr, newBlockEndFraction);						
 				}
+				return;
 			}
+			
+//			if (bc == 0) {
+//				k--;
+//				if (k < 0) {
+//					// remove from top of block
+//					blockCount.setValue(nodeNr, -1);
+//					return;
+//				}
+//			} else if (bc > 0) {
+//				k -= 2;
+//				if (k < -1) {
+//					// remove from bottom of block
+//					blockCount.setValue(node.getNr(), blockCount.getValue(node.getNr()) - 1);
+//					if (blockCount.getValue(nodeNr) == 0) {
+//						blockStartFraction.setValue(nodeNr, blockEndFraction.getValue(nodeNr));						
+//					} else if (blockCount.getValue(nodeNr) > 0) {
+//						double newBlockStartFraction = blockStartFraction.getValue(nodeNr) + Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) -blockStartFraction.getValue(nodeNr));
+//						blockStartFraction.setValue(nodeNr, newBlockStartFraction);
+//					}
+//					return;
+//				}
+//				if (k < 0) {
+//					// remove from top of block
+//					blockCount.setValue(node.getNr(), blockCount.getValue(node.getNr()) - 1);
+//					if (blockCount.getValue(nodeNr) == 0) {
+//						blockEndFraction.setValue(nodeNr, blockStartFraction.getValue(nodeNr));						
+//					} else if (blockCount.getValue(nodeNr) > 0) {
+//						double newBlockEndFraction = blockEndFraction.getValue(nodeNr) - Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) - blockStartFraction.getValue(nodeNr));
+//						blockEndFraction.setValue(nodeNr, newBlockEndFraction);
+//					}
+//					return;
+//				}
+//			}
 		}
 		throw new RuntimeException("Programmer error: should not get here");
 	}	

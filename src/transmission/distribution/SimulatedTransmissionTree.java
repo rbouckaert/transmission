@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math.MathException;
 import org.apache.commons.math.distribution.GammaDistribution;
 import org.apache.commons.math.distribution.GammaDistributionImpl;
 import org.apache.commons.math.distribution.PoissonDistribution;
@@ -18,6 +19,7 @@ import beast.base.core.Description;
 import beast.base.core.Function;
 import beast.base.core.Function.Constant;
 import beast.base.core.Input;
+import beast.base.core.Log;
 import beast.base.evolution.tree.Node;
 import beast.base.evolution.tree.coalescent.ConstantPopulation;
 import beast.base.evolution.tree.coalescent.PopulationFunction;
@@ -29,16 +31,16 @@ import beastfx.app.util.OutFile;
 
 @Description("Simulates transmission tree with colouring and block counts")
 public class SimulatedTransmissionTree extends Runnable {
-	final public Input<Function> endTimeInput = new Input<>("endTime", "end time of the study", new Constant("2.0"));
+	final public Input<Function> endTimeInput = new Input<>("endTime", "end time of the study", new Constant("8.0"));
 	final public Input<Function> popSizeInput = new Input<>("popSize",
 			"population size governing the coalescent process", new Constant("0.1"));
 
 	final public Input<Function> sampleShapeInput = new Input<>("sampleShape",
 			"shape parameter of the sampling intensity function", new Constant("2.0"));
 	final public Input<Function> sampleRateInput = new Input<>("sampleRate",
-			"rate parameter of the sampling intensity function", new Constant("10.0"));
+			"rate parameter of the sampling intensity function", new Constant("5.0"));
 	final public Input<Function> sampleConstantInput = new Input<>("sampleConstant",
-			"constant multiplier of the sampling intensity function", new Constant("1.0"));
+			"constant multiplier of the sampling intensity function", new Constant("0.75"));
 
 	final public Input<Function> transmissionShapeInput = new Input<>("transmissionShape",
 			"shape parameter of the transmission intensity function", new Constant("2.5"));
@@ -51,7 +53,12 @@ public class SimulatedTransmissionTree extends Runnable {
 	public Input<Long> seedInput = new Input<>("seed","random number seed used to initialise the random number generator");
 	final public Input<Integer> maxAttemptsInput = new Input<>("maxAttempts",
 			"maximum number of attempts to generate coalescent sub-trees", 1000);
+	public Input<Integer> taxonCountInput = new Input<>("taxonCount", "generate tree with taxonCount number of taxa. Ignored if negative", -1);
+	public Input<Integer> treeCountInput = new Input<>("treeCount", "generate treeCount number of trees", 1);
 
+	private Node root;
+	private Map<Node, Integer> colourMap;
+	
 	@Override
 	public void initAndValidate() {
 	}
@@ -61,7 +68,34 @@ public class SimulatedTransmissionTree extends Runnable {
 		if (seedInput.get() != null) {
 			Randomizer.setSeed(seedInput.get());
 		}
+		PrintStream out = System.out;
+		if (outputInput.get() != null) {
+			out = new PrintStream(outputInput.get());
+		}
 		
+		int taxonCount = taxonCountInput.get();
+		
+		for (int i = 0; i < treeCountInput.get(); i++) {
+			do {
+				runOnce();		
+			} while (taxonCount > 0 && taxonCount != root.getAllLeafNodes().size());
+			
+			// convert to binary tree
+			String newick = toNewick(root);
+		
+			// for debugging
+			System.err.println(toShortNewick(root, colourMap));
+		
+			out.println(newick);
+		}
+		
+		if (outputInput.get() != null) {
+			out.close();
+		}		
+		Log.warning("Done");
+	}
+		
+	private void runOnce() throws MathException {	
 		double endTime = endTimeInput.get().getArrayValue();
 		double popSize = popSizeInput.get().getArrayValue();
 
@@ -73,7 +107,7 @@ public class SimulatedTransmissionTree extends Runnable {
 		double transmissionRate = transmissionRateInput.get().getArrayValue();
 		double transmissionConstant = transmissionConstantInput.get().getArrayValue();
 
-		Node root = new Node();
+		root = new Node();
 		root.setHeight(endTime);
 		List<Node> nodes = new ArrayList<>();
 		nodes.add(root);
@@ -86,7 +120,7 @@ public class SimulatedTransmissionTree extends Runnable {
 
 		List<Node> leafs = new ArrayList<>();
 		int colour = 0;
-		Map<Node, Integer> colourMap = new HashMap<>();
+		colourMap = new HashMap<>();
 		colourMap.put(root, colour);
 		
 		while (nodes.size() > 0) {
@@ -141,13 +175,14 @@ public class SimulatedTransmissionTree extends Runnable {
 
 			
 			// 5. Sampling a within-host phylogeny
-			double currentHeight = sample ? sampletime : times[0];
-			
+			double currentHeight = sample ? sampletime : (n > 0 ? times[0] : 0);
+		
 			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get());
 			// connect to node
 			node.addChild(fragment);
-			
+
 			colourFragment(fragment, colour, colourMap);
+			
 			colour++;
 		}
 		
@@ -162,22 +197,16 @@ public class SimulatedTransmissionTree extends Runnable {
 		}
 		// remove nodes not included from tree
 		traverse(root, includedNodes);
-
-		// convert to binary tree
-		String newick = toNewick(root);
-		
-		// for debugging
-		System.err.println(toShortNewick(root, colourMap));
-		
-		PrintStream out = System.out;
-		if (outputInput.get() != null) {
-			out = new PrintStream(outputInput.get());
-		}
-		out.println(newick);
 	}
 
 	private Node simulateCoalescent(List<Node> current, ConstantPopulation popFun, double currentHeight,
 			double height, int maxAttemptCount) {
+		if (current.size() == 0) {
+			Node node =  new Node();
+			node.setHeight(currentHeight);
+			return node;
+		}
+		
 		List<Node> fragment;
 		int attempt = 0;
 		do {
@@ -230,7 +259,7 @@ public class SimulatedTransmissionTree extends Runnable {
 				p = p.getParent();
 				blockCount++;
 			}
-			return node.getID() + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",start=" + (blockStart/length) + ",end=" + (blockEnd/length) : "") + "]:" + length;
+			return node.getID() + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",start=" + (blockStart/length) + ",end=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length;
 		}
 		case 1:
 			return toNewick(node.getChild(0));
@@ -254,19 +283,21 @@ public class SimulatedTransmissionTree extends Runnable {
 			if (p == null) {
 				return "(" + leftNewick + "," + rightNewick + ")";
 			}
-			return "(" + leftNewick + "," + rightNewick + ")" + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",start=" + (blockStart/length) + ",end=" + (blockEnd/length) : "") + "]:" + length; 
+			return "(" + leftNewick + "," + rightNewick + ")" + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",start=" + (blockStart/length) + ",end=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length; 
 		}
 		return null;
 	}
 
 	private void traverse(Node node, Set<Node> inclodeNodes) {
 		List<Node> children = node.getChildren();
-		for (Node child : children) {
+		for (int i = children.size()-1; i >= 0; i--) {
+			Node child = children.get(i);
 			if (!inclodeNodes.contains(child)) {
 				node.removeChild(child);
 			}
 		}
-		for (Node child : node.getChildren()) {
+		for (int i = node.getChildren().size()-1; i >= 0; i--) {
+			Node child = children.get(i);
 			traverse(child, inclodeNodes);
 		}		
 	}

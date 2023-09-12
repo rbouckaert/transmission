@@ -16,4 +16,7 @@
 		
         <provider classname="transmission.util.ColourLogger"/>
 	</service>    
+	
+	
+	<packageapp description="Convert transmission tree log into trace log with who infected who" class="transmission.util.TranmissionTree2InfectedByLog" args=""/>
 </addon>

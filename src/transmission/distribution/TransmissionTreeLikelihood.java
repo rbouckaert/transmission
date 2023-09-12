@@ -193,10 +193,12 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
     			// contribution of not being sampled
         		SegmentIntervalList intervals = segments.get(i);
-        		double start = intervals.birthTime;
-    			logP += logS_s(start, d);
-    			// contribution of causing infections
-        		logP += logS_tr(start, d); // further contribution below
+        		if (intervals != null) {
+        			double start = intervals.birthTime;
+        			logP += logS_s(start, d);
+        			// contribution of causing infections
+        			logP += logS_tr(start, d); // further contribution below
+        		}
     		}
     	}
     	
@@ -222,7 +224,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		if (blockCount.getValue(i) > 0) {
     			double logPBlock = 0;
                 
-    			System.err.println("#node " + (i+1));
+//    			System.err.println("#node " + (i+1));
     			// contribution of not being sampled
     			double branchlength = nodes[i].getLength();
     			double start = nodes[i].getHeight() + branchlength * blockStartFraction.getValue(i);
@@ -473,11 +475,13 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 			String str = "";
 			if (lineageCounts == null) {
 				for (int i = 0;i < times.size(); i++) {
-					str += "(" + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
+					//str += "(" + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
+					str += "(" + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + ") ";
 				}
 			} else {
 				for (int i = 0;i < times.size(); i++) {
-					str += "(" + lineageCounts[i] + " " + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
+					//str += "(" + lineageCounts[i] + " " + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + " " + times.get(i) + ") ";
+					str += "(" + lineageCounts[i] + " " + (events.get(i) == IntervalType.SAMPLE ? "S": "C") + ") ";
 				}
 			}
 			return str;

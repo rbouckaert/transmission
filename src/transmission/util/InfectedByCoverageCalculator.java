@@ -21,7 +21,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 	public Input<File> logFilePrefixInput = new Input<>("logFilePrefix", "log file name without the number and '.log' missing. It is assumed there are as many log files as there are entries in the truth file", Validate.REQUIRED);
 	final public Input<OutFile> outputInput = new Input<>("out", "output file, or stdout if not specified", new OutFile("[[none]]"));
 	final public Input<Integer> burnInPercentageInput = new Input<>("burnin", "percentage of trees to used as burn-in (and will be ignored)", 10);	
-	final public Input<Double> quantileInput = new Input<>("quantile", "percentage of coverage to be tested against (between 0 and 100, default 95)", 95.0);	
+	final public Input<Double> coverageInput = new Input<>("coverage", "percentage of coverage to be tested against (between 0 and 100, default 95)", 95.0);	
 
 	@Override
 	public void initAndValidate() {
@@ -47,7 +47,12 @@ public class InfectedByCoverageCalculator extends Runnable {
 		
 		for (int i = 0; i < trueTrace.getTrace(0).length; i++) {
 			String filename = logFilePrefixInput.get().getPath() + i + ".log";
-			LogAnalyser trace = new LogAnalyser(filename, burnInPercentageInput.get(), false, false);
+			LogAnalyser trace = new LogAnalyser(filename, burnInPercentageInput.get(), true, false);
+			if (i % 10 == 0) {
+				Log.warning.print("|");
+			} else {
+				Log.warning.print(".");
+			}
 			
 			out.print(i + "\t");
 			for (int j = 1; j <= n; j++) {
@@ -56,7 +61,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 				
 				// collect info from trace
 	        	double [] infectedBy = new double[n+1];
-	        	Arrays.fill(infectedBy, n);
+	        	Arrays.fill(infectedBy, 0);
 	        	Double [] currenttrace = trace.getTrace(j);
 	        	for (Double d : currenttrace) {
 	        		if (d < -1 || d >= n) {
@@ -72,11 +77,21 @@ public class InfectedByCoverageCalculator extends Runnable {
 	        		index[k] = k;
 	        	}
 	        	HeapSort.sort(infectedBy, index);
-	        	
+
+	        	{
+//System.out.print(i*10+j + "\t");
+//int sum = 0;
+//for (int k = 0; k <= n; k++) {
+//	sum += infectedBy[index[k]];
+//	System.out.print(infectedBy[index[k]] + "\t");
+//}
+//System.out.println(sum);
+			}
+
 	        	// is true value in the 95% coverage set?
-	        	int threshold = (int)(currenttrace.length * quantileInput.get())/ 100;
+	        	int threshold = (int)(currenttrace.length * coverageInput.get())/ 100;
 	        	int sum = 0;
-	        	int k = 0;
+	        	int k = n;
 	        	boolean covered = false;
 	        	while (sum < threshold) {
 	        		if (index[k] == trueSource) {
@@ -84,9 +99,9 @@ public class InfectedByCoverageCalculator extends Runnable {
 	        			break;
 	        		}
 	        		sum += infectedBy[index[k]];
-	        		k++;
+	        		k--;
 	        	}
-				out.print(covered + "\t");
+				out.print((covered?1:0) + "\t");
 			}
 			out.println();
 		}
@@ -94,7 +109,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 		if (outputInput.get() != null && !outputInput.get().getName().equals("[[none]]")) {
 			out.close();
 		}
-		Log.warning("Done");
+		Log.warning("\nDone");
 	}
 	
 	

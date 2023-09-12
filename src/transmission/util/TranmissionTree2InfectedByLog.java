@@ -24,6 +24,7 @@ import transmission.distribution.ColourProvider;
 public class TranmissionTree2InfectedByLog extends Runnable {	
 	final public Input<TreeFile> srcInput = new Input<>("in", "source tree (set) file with transmission tree annotations");
 	final public Input<OutFile> outputInput = new Input<>("out", "output file, or stdout if not specified", new OutFile("[[none]]"));
+	final public Input<String> partitionInput = new Input<>("partition", "name of the partition appended to `blockcount, blockend and blockstart`");
 
 	
 	@Override
@@ -62,9 +63,28 @@ public class TranmissionTree2InfectedByLog extends Runnable {
         	Integer [] count = new Integer[n*2-1];
         	for (int i = 0; i < tree.getNodeCount(); i++) {
         		Node node = tree.getNode(i);
-        		start[i] = (Double) node.getMetaData("start");
-        		end[i] = (Double) node.getMetaData("end");
-        		Object o = node.getMetaData("blockcount");
+        		Object o = node.getMetaData("start");
+        		if (o == null) {
+        			o = node.getMetaData("blockstart");
+        		}
+        		if (o == null) {
+        			o = node.getMetaData("blockstart.t:" + partitionInput.get());
+        		}
+        		start[i] = (Double) o;
+
+        		o = node.getMetaData("end");
+        		if (o == null) {
+        			o = node.getMetaData("blockend");
+        		}
+        		if (o == null) {
+        			o = node.getMetaData("blockend.t:" + partitionInput.get());
+        		}
+        		end[i] = (Double) o;
+        		        		
+        		o = node.getMetaData("blockcount");
+        		if (o == null) {
+        			o = node.getMetaData("blockcount.t:" + partitionInput.get());
+        		}
         		count[i] = o == null ? 0 : (int)(double) o;
         	}
             RealParameter blockStartFraction = new RealParameter(start);

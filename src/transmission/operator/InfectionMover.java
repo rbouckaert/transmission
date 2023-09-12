@@ -74,7 +74,7 @@ public class InfectionMover extends Operator {
 		colourAtBase = likelihood.getFreshColouring();		
 		Validator validator = new Validator((Tree)tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);
 		if (!validator.isValid(colourAtBase)) {
-			System.err.println("x");
+			// System.err.println("x");
 			return Double.NEGATIVE_INFINITY;
 		}
 

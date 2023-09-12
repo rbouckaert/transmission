@@ -7,9 +7,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.commons.math.distribution.PoissonDistribution;
-import org.apache.commons.math.distribution.PoissonDistributionImpl;
-
 import beast.base.core.Description;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
@@ -114,6 +111,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	}
 	}
 
+    
 	@Override
     public double calculateLogP() {
     	logP = 0;
@@ -157,10 +155,10 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		segments = collectSegments();
     	}
 
-System.err.println("\n#contribution of sampled cases");
+//System.err.println("\n#contribution of sampled cases");
 		// contribution of sampled cases
     	for (int i = 0; i < n; i++) {
-System.err.println("#node " + (i+1));
+//System.err.println("#node " + (i+1));
 
     		// contribution of not being sampled
     		SegmentIntervalList intervals = segments.get(i);
@@ -171,14 +169,14 @@ System.err.println("#node " + (i+1));
     		logP +=  logS_tr(start, end); // further contribution below
     	}
 
-System.err.println("\n#transmissions from sampled cases");
+//System.err.println("\n#transmissions from sampled cases");
     	// further contribution of causing infections
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
     		int baseColour = colourAtBase[i];
     		int parent = nodes[i].getParent().getNr();
     		int parentColour = colourAtBase[parent];
     		if (baseColour != parentColour && parentColour < n) {
-System.err.println("#node " + (i+1));
+//System.err.println("#node " + (i+1));
 
     			double tInf0 = segments.get(parentColour).birthTime;
     			Node node = nodes[i];
@@ -187,11 +185,11 @@ System.err.println("#node " + (i+1));
     		}
     	}
     	
-System.err.println("\n#contribution of unsampled cases");
+//System.err.println("\n#contribution of unsampled cases");
     	// contribution of unsampled cases
     	for (int i = n; i < tree.getNodeCount(); i++) {
     		if (colourAtBase[i] >= n) {
-System.err.println("#node " + (i+1));
+//System.err.println("#node " + (i+1));
 
     			// contribution of not being sampled
         		SegmentIntervalList intervals = segments.get(i);
@@ -202,14 +200,14 @@ System.err.println("#node " + (i+1));
     		}
     	}
     	
-System.err.println("\n#transmissions from unsampled cases");
+//System.err.println("\n#transmissions from unsampled cases");
 		// further contribution of causing infections
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
     		int baseColour = colourAtBase[i];
     		int parent = nodes[i].getParent().getNr();
     		int parentColour = colourAtBase[parent];
     		if (baseColour != parentColour && parentColour >= n) {
-System.err.println("#node " + (i+1));
+//System.err.println("#node " + (i+1));
 
     			double tInf0 = segments.get(parentColour).birthTime;
     			Node node = nodes[i];
@@ -218,7 +216,7 @@ System.err.println("#node " + (i+1));
     		}
     	}
     	
-System.err.println("\n#contribution of cases in blocks");
+//System.err.println("\n#contribution of cases in blocks");
     	// contribution of cases in blocks
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
     		if (blockCount.getValue(i) > 0) {
@@ -253,7 +251,7 @@ System.err.println("\n#contribution of cases in blocks");
     			
     			logPBlock -= Math.log(1.0 - Math.exp(-lambda_tr.getValue() * tau));
     			
-    			System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().getHeight() - start) + " = " + tau + " logPBlock=" + logPBlock);    			
+//    			System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().getHeight() - start) + " = " + tau + " logPBlock=" + logPBlock);    			
     			
     			logP += logPBlock;
     		} else  if (colourAtBase[i] != colourAtBase[nodes[i].getParent().getNr()]) {

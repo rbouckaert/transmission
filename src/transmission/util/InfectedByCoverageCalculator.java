@@ -22,7 +22,9 @@ public class InfectedByCoverageCalculator extends Runnable {
 	final public Input<OutFile> outputInput = new Input<>("out", "output file, or stdout if not specified", new OutFile("[[none]]"));
 	final public Input<Integer> burnInPercentageInput = new Input<>("burnin", "percentage of trees to used as burn-in (and will be ignored)", 10);	
 	final public Input<Double> coverageInput = new Input<>("coverage", "percentage of coverage to be tested against (between 0 and 100, default 95)", 95.0);	
-
+	final public Input<String> tagInput = new Input<>("tag", "name of the entry in log files containing infector of information. "
+			+ "If not specified, assume all entries must be used");	
+	
 	@Override
 	public void initAndValidate() {
 	}
@@ -44,6 +46,8 @@ public class InfectedByCoverageCalculator extends Runnable {
 		}
 		out.println();
 		
+		String tag = tagInput.get();
+				
 		
 		for (int i = 0; i < trueTrace.getTrace(0).length; i++) {
 			String filename = logFilePrefixInput.get().getPath() + i + ".log";
@@ -55,14 +59,19 @@ public class InfectedByCoverageCalculator extends Runnable {
 			}
 			
 			out.print(i + "\t");
+			int offset = 0;
+			if (tag != null) {
+				offset = trace.indexof(tag + ".1") - 1;
+			}
 			for (int j = 1; j <= n; j++) {
 				// get true source value
-				int trueSource =(n + 1 + (int)(double)trueTrace.getTrace(j)[i]) % n;
+				int trueSource = 0;
+				trueSource = (n + 1 + (int)(double)trueTrace.getTrace(j)[i]) % n;
 				
 				// collect info from trace
 	        	double [] infectedBy = new double[n+1];
 	        	Arrays.fill(infectedBy, 0);
-	        	Double [] currenttrace = trace.getTrace(j);
+	        	Double [] currenttrace = trace.getTrace(offset + j);
 	        	for (Double d : currenttrace) {
 	        		if (d < -1 || d >= n) {
 	        			infectedBy[n]++;

@@ -31,7 +31,7 @@ import beastfx.app.util.OutFile;
 
 @Description("Simulates transmission tree with colouring and block counts")
 public class SimulatedTransmissionTree extends Runnable {
-	final public Input<Function> endTimeInput = new Input<>("endTime", "end time of the study", new Constant("8.0"));
+	final public Input<Function> endTimeInput = new Input<>("endTime", "end time of the study", new Constant("1.0"));
 	final public Input<Function> popSizeInput = new Input<>("popSize",
 			"population size governing the coalescent process", new Constant("0.1"));
 
@@ -77,13 +77,18 @@ public class SimulatedTransmissionTree extends Runnable {
 		
 		for (int i = 0; i < treeCountInput.get(); i++) {
 			do {
-				runOnce();		
+				runOnce();
 			} while (taxonCount > 0 && taxonCount != root.getAllLeafNodes().size());
 			
 			// convert to binary tree
 			String newick = toNewick(root);
 		
 			// for debugging
+			double h = root.getHeight();
+			for (Node node : root.getAllLeafNodes()) {
+				h = Math.min(h,  node.getHeight());
+			}
+			System.err.print( -h+ " ");
 			System.err.println(toShortNewick(root, colourMap));
 		
 			out.println(newick);
@@ -246,6 +251,10 @@ public class SimulatedTransmissionTree extends Runnable {
 	}
 	
 	private String toNewick(Node node) {
+if (node.getID()!=null && node.getID().equals("t8")) {
+	int h = 4;
+	h--;
+}
 		switch(node.getChildCount()) {
 		case 0: {// leaf
 			double length = node.getLength();
@@ -257,9 +266,11 @@ public class SimulatedTransmissionTree extends Runnable {
 				blockEnd = length;
 				length += p.getLength();
 				p = p.getParent();
-				blockCount++;
+				if (colourMap.get(node) != colourMap.get(p)) {
+					blockCount++;
+				}
 			}
-			return node.getID() + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",start=" + (blockStart/length) + ",end=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length;
+			return node.getID() + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",blockstart=" + (blockStart/length) + ",blockend=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length;
 		}
 		case 1:
 			return toNewick(node.getChild(0));
@@ -278,12 +289,14 @@ public class SimulatedTransmissionTree extends Runnable {
 				blockEnd = length;
 				length += p.getLength();
 				p = p.getParent();
-				blockCount++;
+				if (colourMap.get(node) != colourMap.get(p)) {
+					blockCount++;
+				}
 			}
 			if (p == null) {
 				return "(" + leftNewick + "," + rightNewick + ")";
 			}
-			return "(" + leftNewick + "," + rightNewick + ")" + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",start=" + (blockStart/length) + ",end=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length; 
+			return "(" + leftNewick + "," + rightNewick + ")" + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",blockstart=" + (blockStart/length) + ",blockend=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length; 
 		}
 		return null;
 	}

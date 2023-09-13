@@ -630,6 +630,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	@Override
 	public void restore() {
 		updateColours = true;
+		super.restore();
 	}
 	
 	@Override

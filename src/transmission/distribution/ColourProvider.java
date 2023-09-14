@@ -3,7 +3,6 @@ package transmission.distribution;
 import beast.base.evolution.tree.Node;
 import beast.base.evolution.tree.Tree;
 import beast.base.inference.parameter.IntegerParameter;
-import beast.base.inference.parameter.RealParameter;
 
 public class ColourProvider {
 
@@ -12,19 +11,17 @@ public class ColourProvider {
 	// return true if a valid colouring can be found, 
 	// return false if there is a path between leafs without a transmission
 	static public boolean getColour(
-		     Tree tree,
-		     RealParameter blockStartFraction,
-		     RealParameter blockEndFraction,
+		     Node root,
 		     IntegerParameter blockCount,
+		     int leafCount,
 		     int [] colourAtBase
 			) {
 		
-		colourAtBase[tree.getRoot().getNr()] = tree.getRoot().getNr();
-		calcColourAtBase(tree.getRoot(), colourAtBase, blockCount);
+		colourAtBase[root.getNr()] = root.getNr();
+		calcColourAtBase(root, colourAtBase, blockCount);
 		// normalise colours so leaf i has colour i
 		// but unsampled nodes remain at their colour number
 		int n = colourAtBase.length;
-		int leafCount = tree.getLeafNodeCount();
 		int [] permutation = new int[n];
 		for (int i = 0; i < n; i++) {
 			permutation[i] = i;

@@ -46,7 +46,7 @@ public class ColouredTreeLogger extends BEASTObject implements Loggable {
 
 	@Override
 	public void log(long sample, PrintStream out) {
-		ColourProvider.getColour(tree, blockStartFraction, blockEndFraction, blockCount, colourAtBase);
+		ColourProvider.getColour(tree.getRoot(), blockCount, tree.getLeafNodeCount(), colourAtBase);
 		
         out.print("tree STATE_" + sample + " = ");
         final String newick = toSortedNewick(tree.getRoot(), new int[1]);
@@ -134,7 +134,7 @@ public class ColouredTreeLogger extends BEASTObject implements Loggable {
 	
 	@Override
 	public String toString() {
-		ColourProvider.getColour(tree, blockStartFraction, blockEndFraction, blockCount, colourAtBase);
+		ColourProvider.getColour(tree.getRoot(), blockCount, tree.getLeafNodeCount(), colourAtBase);
         String newick = toSortedNewick(tree.getRoot(), new int[1]);
 		return newick;
 	}

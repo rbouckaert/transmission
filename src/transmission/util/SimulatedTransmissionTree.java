@@ -1,4 +1,4 @@
-package transmission.distribution;
+package transmission.util;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -21,13 +21,16 @@ import beast.base.core.Function.Constant;
 import beast.base.core.Input;
 import beast.base.core.Log;
 import beast.base.evolution.tree.Node;
+import beast.base.evolution.tree.TreeParser;
 import beast.base.evolution.tree.coalescent.ConstantPopulation;
 import beast.base.evolution.tree.coalescent.PopulationFunction;
 import beast.base.inference.Runnable;
+import beast.base.inference.parameter.IntegerParameter;
 import beast.base.util.HeapSort;
 import beast.base.util.Randomizer;
 import beastfx.app.tools.Application;
 import beastfx.app.util.OutFile;
+import transmission.distribution.ColourProvider;
 
 @Description("Simulates transmission tree with colouring and block counts")
 public class SimulatedTransmissionTree extends Runnable {
@@ -49,12 +52,14 @@ public class SimulatedTransmissionTree extends Runnable {
 	final public Input<Function> transmissionConstantInput = new Input<>("transmissionConstant",
 			"constant multiplier of the transmission intensity function", new Constant("1.5"));
 
-	public Input<OutFile> outputInput = new Input<>("out","output file. Print to stdout if not specified");
-	public Input<Long> seedInput = new Input<>("seed","random number seed used to initialise the random number generator");
+	final public Input<OutFile> outputInput = new Input<>("out","output file. Print to stdout if not specified");
+	final public Input<OutFile> traceOutputInput = new Input<>("trace", "trace output file, or stdout if not specified", new OutFile("[[none]]"));
+	final public Input<Long> seedInput = new Input<>("seed","random number seed used to initialise the random number generator");
 	final public Input<Integer> maxAttemptsInput = new Input<>("maxAttempts",
 			"maximum number of attempts to generate coalescent sub-trees", 1000);
-	public Input<Integer> taxonCountInput = new Input<>("taxonCount", "generate tree with taxonCount number of taxa. Ignored if negative", -1);
-	public Input<Integer> treeCountInput = new Input<>("treeCount", "generate treeCount number of trees", 1);
+	final public Input<Integer> taxonCountInput = new Input<>("taxonCount", "generate tree with taxonCount number of taxa. Ignored if negative", -1);
+	final public Input<Integer> treeCountInput = new Input<>("treeCount", "generate treeCount number of trees", 1);
+	final public Input<Boolean> directOnlyInput = new Input<>("directOnly", "consider direct infections only, if false block counts are ignored", true);
 
 	private Node root;
 	private Map<Node, Integer> colourMap;
@@ -65,6 +70,7 @@ public class SimulatedTransmissionTree extends Runnable {
 
 	@Override
 	public void run() throws Exception {
+		int taxonCount = taxonCountInput.get();
 		if (seedInput.get() != null) {
 			Randomizer.setSeed(seedInput.get());
 		}
@@ -72,8 +78,19 @@ public class SimulatedTransmissionTree extends Runnable {
 		if (outputInput.get() != null) {
 			out = new PrintStream(outputInput.get());
 		}
+		PrintStream traceout = System.out;
+		if (traceOutputInput.get() != null && !traceOutputInput.get().getName().equals("[[none]]")) {
+			Log.warning("Writing to file " + traceOutputInput.get().getPath());
+			traceout = new PrintStream(traceOutputInput.get());
+		}
+    	traceout.print("Sample\t");
+    	if (false && taxonCount > 0) {
+    		for (int i = 0; i < taxonCount; i++) {
+    			traceout.print("t" + (i+1) + "\t");
+    		}
+    	}
+    	traceout.println("endTime\tTree.height\tTree.treeLength");
 		
-		int taxonCount = taxonCountInput.get();
 		
 		for (int i = 0; i < treeCountInput.get(); i++) {
 			do {
@@ -88,18 +105,73 @@ public class SimulatedTransmissionTree extends Runnable {
 			for (Node node : root.getAllLeafNodes()) {
 				h = Math.min(h,  node.getHeight());
 			}
-			System.err.print( -h+ " ");
 			System.err.println(toShortNewick(root, colourMap));
 		
 			out.println(newick);
+	    	traceout.print(i +"\t");
+	    	
+
+			if (false && taxonCount > 0) {
+				TreeParser tree = new TreeParser(newick);
+				IntegerParameter blockCount = new IntegerParameter();
+				blockCount.initByName("dimension", taxonCount*2+1, "value", "-1");
+				for (int j = 0; j < tree.getNodeCount(); j++) {
+					Node node = tree.getNode(j);
+					Object o = node.getMetaData("blockcount");
+					if (o != null) {
+						blockCount.setValue(j, (int)(double)o);
+					}
+				}
+				int [] colourAtBase = new int[taxonCount*2-1];
+				ColourProvider.getColour(tree.getRoot(), blockCount, tree.getNodeCount(), colourAtBase);
+				
+				int [] infectedBy = new int[taxonCount];
+				Arrays.fill(infectedBy, -1);
+				collectInfectedBy(root, infectedBy, taxonCount, colourAtBase, blockCount);
+	    	
+	    		for (int j = 0; j < taxonCount; j++) {
+	    			traceout.printf(infectedBy[j] + "\t");
+	    		}
+			}
+	    	traceout.println((-h) + "\t" + (root.getHeight()-h) + "\t" + length(root));
+			
 		}
 		
+		if (traceOutputInput.get() != null && !traceOutputInput.get().getName().equals("[[none]]")) {
+			traceout.close();
+		}
 		if (outputInput.get() != null) {
 			out.close();
 		}		
 		Log.warning("Done");
 	}
 		
+	private void collectInfectedBy(Node node, int[] infectedBy, int taxonCount, int [] colourAtBase, IntegerParameter blockCount) {
+		if (!node.isRoot()) {
+    		Node parent = node.getParent();
+    		if (colourAtBase[node.getNr()] < taxonCount && colourAtBase[parent.getNr()] < taxonCount && 
+    				colourAtBase[node.getNr()] != colourAtBase[parent.getNr()]) {
+    			if (!directOnlyInput.get() || blockCount.getValue(node.getNr()) == 0) {
+    				infectedBy[colourAtBase[node.getNr()]] = colourAtBase[parent.getNr()];
+    			}
+    		}
+    	}
+		for (Node child : node.getChildren()) {
+			collectInfectedBy(child, infectedBy, taxonCount, colourAtBase, blockCount);
+		}
+	}
+
+	private double length(Node node) {
+		double length = 0;
+		for (Node child : node.getChildren()) {
+			length += length(child);
+		}
+		if (!node.isRoot()) {
+			length += node.getLength();
+		}
+		return length;
+	}
+
 	private void runOnce() throws MathException {	
 		double endTime = endTimeInput.get().getArrayValue();
 		double popSize = popSizeInput.get().getArrayValue();
@@ -183,6 +255,10 @@ public class SimulatedTransmissionTree extends Runnable {
 			double currentHeight = sample ? sampletime : (n > 0 ? times[0] : 0);
 		
 			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get());
+			if (fragment == null) {
+				runOnce();
+				return;
+			}
 			// connect to node
 			node.addChild(fragment);
 
@@ -222,8 +298,9 @@ public class SimulatedTransmissionTree extends Runnable {
 			}
 			attempt++;
 		} while (attempt < maxAttemptCount);
-		throw new RuntimeException("Could not find a proper coalescent tree after " + maxAttemptCount + " attempts. "
+		Log.warning("Could not find a proper coalescent tree after " + maxAttemptCount + " attempts. "
 				+ "Consider decreasing the population size or increasing maxAttempts.");
+		return null;
 	}
 
 	private void colourFragment(Node node, int colour, Map<Node, Integer> colourMap) {
@@ -251,10 +328,6 @@ public class SimulatedTransmissionTree extends Runnable {
 	}
 	
 	private String toNewick(Node node) {
-if (node.getID()!=null && node.getID().equals("t8")) {
-	int h = 4;
-	h--;
-}
 		switch(node.getChildCount()) {
 		case 0: {// leaf
 			double length = node.getLength();

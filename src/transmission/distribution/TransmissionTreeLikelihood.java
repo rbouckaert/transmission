@@ -142,7 +142,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	// return true if a valid colouring can be found, 
 	// return false if there is a path between leafs without a transmission
 	public boolean calcColourAtBase() {
-		updateColours = ColourProvider.getColour(tree, blockStartFraction, blockEndFraction, blockCount, colourAtBase);
+		updateColours = ColourProvider.getColour(tree.getRoot(), blockCount, tree.getLeafNodeCount(), colourAtBase);
 		return updateColours;
 	}		
 

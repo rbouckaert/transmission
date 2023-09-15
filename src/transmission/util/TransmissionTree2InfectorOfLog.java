@@ -1,5 +1,6 @@
 package transmission.util;
 
+import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.Arrays;
 
@@ -24,6 +25,7 @@ import transmission.distribution.ColourProvider;
 public class TransmissionTree2InfectorOfLog extends Runnable {	
 	final public Input<TreeFile> srcInput = new Input<>("in", "source tree (set) file with transmission tree annotations");
 	final public Input<OutFile> outputInput = new Input<>("out", "output file, or stdout if not specified", new OutFile("[[none]]"));
+	final public Input<OutFile> outputTypeInput = new Input<>("types", "output file with type information for CoverageCalculator, ignored if not specified", new OutFile("[[none]]"));
 	final public Input<String> partitionInput = new Input<>("partition", "name of the partition appended to `blockcount, blockend and blockstart`");
 	final public Input<Boolean> directOnlyInput = new Input<>("directOnly", "consider direct infections only, if false block counts are ignored", true);
 
@@ -44,15 +46,25 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         MemoryFriendlyTreeSet trees = new TreeAnnotator().new MemoryFriendlyTreeSet(srcInput.get().getAbsolutePath(), 0);
         trees.reset();
     	Tree tree = trees.next();
+    	int n = tree.getLeafNodeCount();
     	
+    	printTypes(n, tree);
     	
     	out.print("Sample\t");
-    	int n = tree.getLeafNodeCount();
     	for (int i = 0; i < n; i++) {
-    		out.print(tree.getNode(i).getID() + "\t");
+    		out.print("infectorOf."+tree.getNode(i).getID() + "\t");
+    	}
+    	for (int i = 0; i < n; i++) {
+    		out.print("blockcount."+tree.getNode(i).getID() + "\t");
+    	}
+    	for (int i = 0; i < n; i++) {
+    		out.print("blockstart."+tree.getNode(i).getID() + "\t");
+    	}
+    	for (int i = 0; i < n; i++) {
+    		out.print("blockend."+tree.getNode(i).getID() + "\t");
     	}
     	out.println();
-    	
+
     	
         trees.reset();
         int k = 0;
@@ -117,6 +129,15 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         	for (int i = 0; i < n; i++) {
         		out.print(infectedBy[i] + "\t");
         	}
+        	for (int i = 0; i < n; i++) {
+        		out.print(blockCount.getValue(i) + "\t");
+        	}
+        	for (int i = 0; i < n; i++) {
+        		out.print(blockStartFraction.getValue(i) + "\t");
+        	}
+        	for (int i = 0; i < n; i++) {
+        		out.print(blockEndFraction.getValue(i) + "\t");
+        	}
         	out.println();
 
         	k++;
@@ -128,6 +149,33 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
 			out.close();
 		}
         Log.warning("Done");
+	}
+
+	/*
+	 * print table of types for use in CoverageCalculator from the beast-validation package.
+	 */
+	private void printTypes(int n, Tree tree) throws FileNotFoundException {
+    	PrintStream outtype = System.out;
+		if (outputTypeInput.get() != null && !outputTypeInput.get().getName().equals("[[none]]")) {
+			Log.warning("Writing to file " + outputTypeInput.get().getPath());
+			outtype = new PrintStream(outputTypeInput.get());
+		}
+		outtype.println("variable\ttype");
+    	for (int i = 0; i < n; i++) {
+    		outtype.print("infectorOf."+tree.getNode(i).getID() + "\tc\n");
+    	}
+    	for (int i = 0; i < n; i++) {
+    		outtype.print("blockcount."+tree.getNode(i).getID() + "\tc\n");
+    	}
+    	for (int i = 0; i < n; i++) {
+    		outtype.print("blockstart."+tree.getNode(i).getID() + "\td\n");
+    	}
+    	for (int i = 0; i < n; i++) {
+    		outtype.print("blockend."+tree.getNode(i).getID() + "\td\n");
+    	}
+		if (outputTypeInput.get() != null && !outputTypeInput.get().getName().equals("[[none]]")) {
+			outtype.close();
+		}
 	}
 
 	public static void main(String[] args) throws Exception {

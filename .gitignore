@@ -1,3 +1,6 @@
+/beast-source/
+/build-beast/
+/test/
 /build/
 .classpath
 .project

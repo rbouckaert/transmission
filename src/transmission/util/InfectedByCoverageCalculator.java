@@ -38,15 +38,24 @@ public class InfectedByCoverageCalculator extends Runnable {
 			Log.warning("Writing to file " + outputInput.get().getPath());
 			out = new PrintStream(outputInput.get());
 		}
+		String tag = tagInput.get();
 	
 		int n = trueTrace.getLabels().size();
+		if (tag != null) {
+			n = 0;
+			for (String str : trueTrace.getLabels()) {
+				if (str.startsWith(tag + ".")) {
+					n++;
+				}
+			}
+		}
+		
 		out.print("Sample\t");
 		for (int i = 0; i < n; i++) {
 			out.print("Covered"+i+"\t");
 		}
 		out.println();
 		
-		String tag = tagInput.get();
 				
 		
 		for (int i = 0; i < trueTrace.getTrace(0).length; i++) {

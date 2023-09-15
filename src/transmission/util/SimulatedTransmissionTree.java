@@ -86,7 +86,7 @@ public class SimulatedTransmissionTree extends Runnable {
     	traceout.print("Sample\t");
     	if (false && taxonCount > 0) {
     		for (int i = 0; i < taxonCount; i++) {
-    			traceout.print("t" + (i+1) + "\t");
+    			traceout.print("t" + format(i+1) + "\t");
     		}
     	}
     	traceout.println("endTime\tTree.height\tTree.treeLength");
@@ -98,6 +98,10 @@ public class SimulatedTransmissionTree extends Runnable {
 			} while (taxonCount > 0 && taxonCount != root.getAllLeafNodes().size());
 			
 			// convert to binary tree
+			while (root.getChildCount() == 1) {
+				root = root.getChild(0);
+			}
+			root.setParent(null);
 			String newick = toNewick(root);
 		
 			// for debugging
@@ -133,7 +137,7 @@ public class SimulatedTransmissionTree extends Runnable {
 	    			traceout.printf(infectedBy[j] + "\t");
 	    		}
 			}
-	    	traceout.println((-h) + "\t" + (root.getHeight()-h) + "\t" + length(root));
+	    	traceout.println((-h) + "\t" + (root.getHeight() - h) + "\t" + length(root));
 			
 		}
 		
@@ -239,7 +243,7 @@ public class SimulatedTransmissionTree extends Runnable {
 				leaf.setHeight(sampletime);
 				leafs.add(leaf);
 				current.add(leaf);
-				leaf.setID("t" + leafs.size());
+				leaf.setID("t" + format(leafs.size()));
 			}
 			// create internal (infection) nodes
 			for (int i = 0; i < n; i++) {
@@ -280,6 +284,16 @@ public class SimulatedTransmissionTree extends Runnable {
 		traverse(root, includedNodes);
 	}
 
+	private String format(int i) {
+		if (i >= 100) {
+			return i + "";
+		} else if (i >= 10) {
+			return "0"+i;
+		} else {
+			return "00"+i;
+		}
+	}
+	
 	private Node simulateCoalescent(List<Node> current, ConstantPopulation popFun, double currentHeight,
 			double height, int maxAttemptCount) {
 		if (current.size() == 0) {
@@ -343,6 +357,11 @@ public class SimulatedTransmissionTree extends Runnable {
 					blockCount++;
 				}
 			}
+			
+			if (p != null && Math.abs(length - (p.getHeight() - node.getHeight())) > 1e-8) {
+				int h = 3;
+				h++;
+			}
 			return node.getID() + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",blockstart=" + (blockStart/length) + ",blockend=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length;
 		}
 		case 1:
@@ -369,22 +388,26 @@ public class SimulatedTransmissionTree extends Runnable {
 			if (p == null) {
 				return "(" + leftNewick + "," + rightNewick + ")";
 			}
+			if (Math.abs(length - (p.getHeight() - node.getHeight())) > 1e-8) {
+				int h = 3;
+				h++;
+			}
 			return "(" + leftNewick + "," + rightNewick + ")" + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",blockstart=" + (blockStart/length) + ",blockend=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length; 
 		}
 		return null;
 	}
 
-	private void traverse(Node node, Set<Node> inclodeNodes) {
+	private void traverse(Node node, Set<Node> includedNodes) {
 		List<Node> children = node.getChildren();
 		for (int i = children.size()-1; i >= 0; i--) {
 			Node child = children.get(i);
-			if (!inclodeNodes.contains(child)) {
+			if (!includedNodes.contains(child)) {
 				node.removeChild(child);
 			}
 		}
 		for (int i = node.getChildren().size()-1; i >= 0; i--) {
 			Node child = children.get(i);
-			traverse(child, inclodeNodes);
+			traverse(child, includedNodes);
 		}		
 	}
 

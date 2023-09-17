@@ -1,6 +1,7 @@
 package transmission.util;
 
 import java.io.PrintStream;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,7 +34,7 @@ import beastfx.app.util.OutFile;
 import transmission.distribution.ColourProvider;
 
 @Description("Simulates transmission tree with colouring and block counts")
-public class SimulatedTransmissionTree extends Runnable {
+public class TransmissionTreeSimulator extends Runnable {
 	final public Input<Function> endTimeInput = new Input<>("endTime", "end time of the study", new Constant("1.0"));
 	final public Input<Function> popSizeInput = new Input<>("popSize",
 			"population size governing the coalescent process", new Constant("0.1"));
@@ -91,11 +92,24 @@ public class SimulatedTransmissionTree extends Runnable {
     	}
     	traceout.println("endTime\tTree.height\tTree.treeLength");
 		
+    	
+    	Map<Integer, Integer> taxonCounts = new HashMap<>();
 		
+    	long attempts = 0;
 		for (int i = 0; i < treeCountInput.get(); i++) {
+			int k;
 			do {
 				runOnce();
-			} while (taxonCount > 0 && taxonCount != root.getAllLeafNodes().size());
+				k = root.getAllLeafNodes().size();
+				if (!taxonCounts.containsKey(k)) {
+					taxonCounts.put(k, 0);
+				}
+				taxonCounts.put(k, taxonCounts.get(k) + 1);
+				attempts++;
+				if (attempts % 100000 == 0) {
+					reportAttempts(taxonCounts);
+				}
+			} while (taxonCount > 0 && taxonCount != k);
 			
 			// convert to binary tree
 			while (root.getChildCount() == 1) {
@@ -140,6 +154,7 @@ public class SimulatedTransmissionTree extends Runnable {
 	    	traceout.println((-h) + "\t" + (root.getHeight() - h) + "\t" + length(root));
 			
 		}
+		reportAttempts(taxonCounts);
 		
 		if (traceOutputInput.get() != null && !traceOutputInput.get().getName().equals("[[none]]")) {
 			traceout.close();
@@ -150,6 +165,21 @@ public class SimulatedTransmissionTree extends Runnable {
 		Log.warning("Done");
 	}
 		
+	private void reportAttempts(Map<Integer, Integer> taxonCounts) {
+		DecimalFormat f = new DecimalFormat("##.###");
+		long sum = 0;
+		for (Integer i : taxonCounts.values()) {
+			sum += i;
+		}
+		Integer [] keys = taxonCounts.keySet().toArray(new Integer[] {});
+		Arrays.sort(keys);
+		Log.warning("#taxa\tpercentage of trees");
+		for (Integer i : keys) {
+			double percentage = 100.0*taxonCounts.get(i)/sum;
+			Log.warning(i + "\t" + (percentage < 10 ? " " : "") + f.format(percentage));
+		}
+	}
+
 	private void collectInfectedBy(Node node, int[] infectedBy, int taxonCount, int [] colourAtBase, IntegerParameter blockCount) {
 		if (!node.isRoot()) {
     		Node parent = node.getParent();
@@ -535,7 +565,7 @@ public class SimulatedTransmissionTree extends Runnable {
 
 
 	public static void main(String[] args) throws Exception {
-		new Application(new SimulatedTransmissionTree(), "SimulatedTransmissionTree", args);
+		new Application(new TransmissionTreeSimulator(), "SimulatedTransmissionTree", args);
 	}
 
 }

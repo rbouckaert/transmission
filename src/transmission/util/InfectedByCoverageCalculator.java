@@ -10,10 +10,23 @@ import beast.base.core.Log;
 import beast.base.core.Input.Validate;
 import beast.base.inference.Runnable;
 import beast.base.util.HeapSort;
+import beastfx.app.beauti.ThemeProvider;
 import beastfx.app.tools.Application;
 import beastfx.app.tools.LogAnalyser;
+import beastfx.app.util.Alert;
 import beastfx.app.util.LogFile;
 import beastfx.app.util.OutFile;
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.DialogPane;
+import javafx.scene.layout.HBox;
 
 @Description("Calculate coverage of who infected who")
 public class InfectedByCoverageCalculator extends Runnable {
@@ -24,6 +37,9 @@ public class InfectedByCoverageCalculator extends Runnable {
 	final public Input<Double> coverageInput = new Input<>("coverage", "percentage of coverage to be tested against (between 0 and 100, default 95)", 95.0);	
 	final public Input<String> tagInput = new Input<>("tag", "name of the entry in log files containing infector of information. "
 			+ "If not specified, assume all entries must be used");	
+	final public Input<Boolean> includeUnsampledInput = new Input<>("includeUnsampled", "include unsampled infectors in true-vs-inferred plot", true);	
+	final public Input<Boolean> showPlotInput = new Input<>("showplot", "show true-vs-inferred plot in popup dialog", true);	
+
 	
 	@Override
 	public void initAndValidate() {
@@ -57,6 +73,9 @@ public class InfectedByCoverageCalculator extends Runnable {
 		out.println();
 		
 				
+		int [] truebins = new int [10];
+		int [] totals = new int [truebins.length];
+		boolean includeUnsampled = includeUnsampledInput.get();
 		
 		for (int i = 0; i < trueTrace.getTrace(0).length; i++) {
 			String filename = logFilePrefixInput.get().getPath() + i + ".log";
@@ -119,16 +138,104 @@ public class InfectedByCoverageCalculator extends Runnable {
 	        		sum += infectedBy[index[k]];
 	        		k--;
 	        	}
+	        	
+	        	// update true vs estimated bins
+	        	for (int x = includeUnsampled ? 0 : 1; x < infectedBy.length; x++) {
+	        		if (infectedBy[x] > 0) {
+			        	int b = (int)(truebins.length*infectedBy[x]/currenttrace.length);
+			        	if (b >= truebins.length) {
+			        		b = truebins.length-1;
+			        	}
+			        	totals[b]++;
+	        		}
+	        	}
+	        	if (includeUnsampled || trueSource > 0) {
+	        		if (infectedBy[trueSource] > 0) {
+			        	int b = (int)(truebins.length*infectedBy[trueSource]/currenttrace.length);
+			        	if (b >= truebins.length) {
+			        		b = truebins.length-1;
+			        	}
+			        	truebins[b]++;
+	        		}
+	        	}
 				out.print((covered?1:0) + "\t");
 			}
 			out.println();
 		}
-				
+		
+		System.out.println();
+		System.out.println(Arrays.toString(totals));
+		System.out.println(Arrays.toString(truebins));
+    	for (int x = 0; x < truebins.length; x++) {
+    		System.out.print((double)truebins[x]/totals[x]);
+    		if (x < truebins.length-1) {
+    			System.out.print(", ");
+    		}
+    	}
+		
 		if (outputInput.get() != null && !outputInput.get().getName().equals("[[none]]")) {
 			out.close();
 		}
+
+		if (showPlotInput.get()) {
+			showCoveragePlot(truebins, totals);
+		}
+		
 		Log.warning("\nDone");
 	}
+	
+	
+    private void showCoveragePlot(int [] truebins, int [] totals) {
+		// this initialised the javafx toolkit
+		new JFXPanel();
+		Platform.runLater(() -> {
+	
+	    	HBox root = new HBox();
+	
+	        Scene scene = new Scene(root, 480, 330);
+	        CategoryAxis xAxis = new CategoryAxis();
+	        xAxis.setLabel("Inferred");
+	        
+	        NumberAxis yAxis = new NumberAxis();
+	        yAxis.setLabel("Actual");
+	        yAxis.setAutoRanging(false);
+	        yAxis.setLowerBound(0);
+	        yAxis.setUpperBound(100);
+	
+	        BarChart barChart = new BarChart(xAxis, yAxis);
+	        barChart.setTitle("Infectors true vs inferred " + 
+	        		(includeUnsampledInput.get()? "with" : "wihtout") + " unsampled hosts");
+	
+	        XYChart.Series data = new XYChart.Series<String, Number>();
+	
+	        for (int i = 0; i < truebins.length; i++) {
+	        	data.getData().add(new XYChart.Data<>(
+	        			(i * 100)/truebins.length + "-" + ((i+1) * 100)/truebins.length + "\n" + totals[i], 
+	        			totals[i] > 0 ? 100.0 * truebins[i]/totals[i] : 0));
+	        }
+	
+	        barChart.getData().add(data);
+	        barChart.setLegendVisible(false);
+	        
+	
+	        root.getChildren().add(barChart);
+	
+			Dialog<Node> alert = new javafx.scene.control.Dialog<>();
+			DialogPane pane = new DialogPane();
+			pane.setContent(root);
+			alert.setDialogPane(pane);
+			alert.setHeaderText("coverage");
+			alert.getDialogPane().getButtonTypes().addAll(Alert.CLOSED_OPTION);
+			pane.setPrefHeight(600);
+			pane.setPrefWidth(600);
+			alert.setResizable(true);
+			ThemeProvider.loadStyleSheet(alert.getDialogPane().getScene());
+			alert.showAndWait();
+	    });
+
+    }
+	
+	
 	
 	
 	public static void main(String[] args) throws Exception {

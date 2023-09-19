@@ -174,10 +174,13 @@ public class TransmissionTreeSimulator extends Runnable {
 		Integer [] keys = taxonCounts.keySet().toArray(new Integer[] {});
 		Arrays.sort(keys);
 		Log.warning("#taxa\tpercentage of trees");
+		double mean = 0;
 		for (Integer i : keys) {
 			double percentage = 100.0*taxonCounts.get(i)/sum;
 			Log.warning(i + "\t" + (percentage < 10 ? " " : "") + f.format(percentage));
+			mean += taxonCounts.get(i) * i;
 		}
+		Log.warning("Mean = " + (mean / sum));
 	}
 
 	private void collectInfectedBy(Node node, int[] infectedBy, int taxonCount, int [] colourAtBase, IntegerParameter blockCount) {

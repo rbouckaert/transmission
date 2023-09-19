@@ -1,8 +1,18 @@
 package transmission.util;
 
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
+
+import javax.imageio.ImageIO;
 
 import beast.base.core.Description;
 import beast.base.core.Input;
@@ -18,14 +28,17 @@ import beastfx.app.util.LogFile;
 import beastfx.app.util.OutFile;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.HBox;
 
 @Description("Calculate coverage of who infected who")
@@ -38,7 +51,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 	final public Input<String> tagInput = new Input<>("tag", "name of the entry in log files containing infector of information. "
 			+ "If not specified, assume all entries must be used");	
 	final public Input<Boolean> includeUnsampledInput = new Input<>("includeUnsampled", "include unsampled infectors in true-vs-inferred plot", true);	
-	final public Input<Boolean> showPlotInput = new Input<>("showplot", "show true-vs-inferred plot in popup dialog", true);	
+	final public Input<OutFile> pngFileInput = new Input<>("png", "name of file to write bar-chart plot", new OutFile("[[none]]"));	
 
 	
 	@Override
@@ -177,7 +190,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 			out.close();
 		}
 
-		if (showPlotInput.get()) {
+		if (pngFileInput.get() != null && !pngFileInput.get().getName().equals("[[none]]")) {
 			showCoveragePlot(truebins, totals);
 		}
 		
@@ -230,7 +243,22 @@ public class InfectedByCoverageCalculator extends Runnable {
 			pane.setPrefWidth(600);
 			alert.setResizable(true);
 			ThemeProvider.loadStyleSheet(alert.getDialogPane().getScene());
-			alert.showAndWait();
+			
+
+			SnapshotParameters param = new SnapshotParameters();
+		    param.setDepthBuffer(true);
+		    WritableImage snapshot = root.snapshot(param, null);
+		    BufferedImage tempImg = SwingFXUtils.fromFXImage(snapshot, null);
+		    try {
+			  Graphics g = tempImg.getGraphics();
+			  g.setColor(Color.black);
+			  g.drawLine(77, 429, 474, 49);
+		      ImageIO.write(tempImg, "png", new FileOutputStream(pngFileInput.get()));
+		    } catch (IOException e) {
+		      e.printStackTrace();
+		    }			
+
+			// alert.showAndWait();
 	    });
 
     }

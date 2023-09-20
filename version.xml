@@ -13,7 +13,7 @@
         <provider classname="transmission.operator.InfectionMover2"/>
         
 		<provider classname="transmission.logger.ColouredTreeLogger"/>
-		
+        <provider classname="transmission.util.InfectionCount"/>
         <provider classname="transmission.util.ColourLogger"/>
         <provider classname="transmission.util.InfectorOfLogger"/>
 	</service>    

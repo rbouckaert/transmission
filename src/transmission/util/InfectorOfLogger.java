@@ -34,6 +34,8 @@ public class InfectorOfLogger extends BEASTObject implements Loggable {
 		for (int i = 0; i < tree.getLeafNodeCount(); i++) {
 			out.print("infectorOf." + (i+1) + "\t");
 		}
+		out.print("infectionCount\t");
+		
 		
 	}
 
@@ -46,6 +48,7 @@ public class InfectorOfLogger extends BEASTObject implements Loggable {
     	int [] infectedBy = new int[n];
     	Arrays.fill(infectedBy, -1);
     	IntegerParameter blockCount = likelihood.blockCountInput.get();
+    	int infectionCount = 0;
     	for (int i = 0; i < 2 * n - 2; i++) {
     		Node node = tree.getNode(i);
     		Node parent = node.getParent();
@@ -55,11 +58,13 @@ public class InfectorOfLogger extends BEASTObject implements Loggable {
     				infectedBy[colourAtBase[node.getNr()]] = colourAtBase[parent.getNr()];
     			}
     		}
+    		infectionCount += blockCount.getValue(i) + 1;
     	}
     	
     	for (int i = 0; i < n; i++) {
-    		out.printf(infectedBy[i] + "\t");
+    		out.print(infectedBy[i] + "\t");
     	}
+    	out.print(infectionCount + "\t");
 	}
 
 	@Override

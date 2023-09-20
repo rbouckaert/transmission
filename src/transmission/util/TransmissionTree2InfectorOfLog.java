@@ -63,6 +63,7 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
     	for (int i = 0; i < n; i++) {
     		out.print("blockend."+tree.getNode(i).getID() + "\t");
     	}
+    	out.print("infectionCount\t");
     	out.println();
 
     	
@@ -138,6 +139,11 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         	for (int i = 0; i < n; i++) {
         		out.print(blockEndFraction.getValue(i) + "\t");
         	}
+        	int infectionCount = 0;
+        	for (int i = 0; i < 2*n-2; i++) {
+        		infectionCount += blockCount.getValue(i) + 1;
+        	}
+        	out.print(infectionCount + "\t");
         	out.println();
 
         	k++;
@@ -173,6 +179,7 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
     	for (int i = 0; i < n; i++) {
     		outtype.print("blockend."+tree.getNode(i).getID() + "\td\n");
     	}
+		outtype.print("infectionCount\td\n");
 		if (outputTypeInput.get() != null && !outputTypeInput.get().getName().equals("[[none]]")) {
 			outtype.close();
 		}

@@ -20,6 +20,7 @@
 	
 	
 	<packageapp description="Convert transmission tree log into trace log with who infected who" class="transmission.util.TransmissionTree2InfectorOfLog" args=""/>
+    <packageapp description="Convert transmission tree log into bar plot with transmission times" class="transmission.util.TransmissionTreeInfectionTimes" args=""/>
 	<packageapp description="Calculate coverage of who infected who" class="transmission.util.InfectedByCoverageCalculator" args=""/>
     <packageapp description="Simulates transmission tree" class="transmission.util.TransmissionTreeSimulator" args=""/>
 	

@@ -13,6 +13,7 @@ import beast.base.inference.StateNode;
 import beast.base.inference.parameter.IntegerParameter;
 import beast.base.inference.parameter.RealParameter;
 import beast.base.util.Randomizer;
+import transmission.distribution.ColourProvider;
 
 @Description("Operator that moves block parameters of a transmission tree")
 public class BlockOperator extends Operator {
@@ -66,7 +67,10 @@ public class BlockOperator extends Operator {
 			int pre = blockCount.getValue(0);
 
 			int i = chooseInfectionToRemove();
-			double logHR = removeInfection(i);
+			double logHR = 0;
+			if (i != -1) {
+				logHR += removeInfection(i);
+			}
 			i = chooseBlockToInsert();
 			logHR += insertInfection(i);
 			
@@ -77,6 +81,9 @@ public class BlockOperator extends Operator {
 			return 0*logHR;
 		} else	if (Randomizer.nextBoolean()) {
 			int i = chooseInfectionToRemove();
+			if (i != -1) {
+				return Double.NEGATIVE_INFINITY;
+			}
 			return removeInfection(i);
 		} else {
 			int i = chooseBlockToInsert();
@@ -111,13 +118,34 @@ public class BlockOperator extends Operator {
 
 	
 	private int chooseInfectionToRemove() {
+		int [] colourAtBase = new int[tree.getNodeCount()];
+		int n = tree.getLeafNodeCount();
+		ColourProvider.getColour(tree.getRoot(), blockCount, n, colourAtBase);
+		
 		int eligbleInfectionCount = 0;
 		for (int i = 0; i < blockCount.getDimension(); i++) {
-			eligbleInfectionCount += blockCount.getValue(i) + 1;
+			if (blockCount.getValue(i) == 0) {
+				if (!(colourAtBase[i] < n && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
+					eligbleInfectionCount += 1;
+				}
+			} else {
+				eligbleInfectionCount += blockCount.getValue(i) + 1;
+			}
 		}
+		if (eligbleInfectionCount == 0) {
+			return -1;
+		}
+		
+		
 		int k = Randomizer.nextInt(eligbleInfectionCount);
 		for (int i = 0; i < blockCount.getDimension(); i++) {
-			k -= blockCount.getValue(i) + 1;
+			if (blockCount.getValue(i) == 0) {
+				if (!(colourAtBase[i] < n && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
+					k--;
+				}
+			} else {
+				k -= blockCount.getValue(i) + 1;
+			}
 			if (k < 0) {
 				return i;
 			}

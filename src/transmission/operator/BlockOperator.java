@@ -81,7 +81,7 @@ public class BlockOperator extends Operator {
 			return 0*logHR;
 		} else	if (Randomizer.nextBoolean()) {
 			int i = chooseInfectionToRemove();
-			if (i != -1) {
+			if (i == -1) {
 				return Double.NEGATIVE_INFINITY;
 			}
 			return removeInfection(i);
@@ -117,12 +117,14 @@ public class BlockOperator extends Operator {
 	}
 
 	
+	private int eligbleInfectionCount = 0;
+	
 	private int chooseInfectionToRemove() {
 		int [] colourAtBase = new int[tree.getNodeCount()];
 		int n = tree.getLeafNodeCount();
 		ColourProvider.getColour(tree.getRoot(), blockCount, n, colourAtBase);
 		
-		int eligbleInfectionCount = 0;
+		eligbleInfectionCount = 0;
 		for (int i = 0; i < blockCount.getDimension(); i++) {
 			if (blockCount.getValue(i) == 0) {
 				if (!(colourAtBase[i] < n && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
@@ -154,6 +156,9 @@ public class BlockOperator extends Operator {
 	}
 	
 	private int chooseBlockToInsert() {
+//		int i = Randomizer.nextInt(tree.getNodeCount()-1);
+//		return i;
+		
 		double length = 0;
 		for (Node node : tree.getNodesAsArray()) {
 			length += node.getLength();
@@ -227,13 +232,14 @@ public class BlockOperator extends Operator {
 	private double removeInfection(int i) {
 		switch (blockCount.getValue(i)) {
 		case -1:
-			// do nothing
+			// do nothing, should not get here
 			return 0; 
 			
 		case 0:
 			// remove infection
 			blockCount.setValue(i, -1);
-			return Math.log(2.0);
+			break;
+			//return Math.log(2.0);
 			
 		case 1:
 			// remove infection
@@ -248,7 +254,7 @@ public class BlockOperator extends Operator {
 //			blockStartFraction.setValue(i, mid);
 //			blockEndFraction.setValue(i, mid);
 //			return -Math.log(2.0);
-			return 0;
+			break;
 		default:
 			// remove infection
 			blockCount.setValue(i, blockCount.getValue(i)-1);
@@ -259,7 +265,13 @@ public class BlockOperator extends Operator {
 //			}
 		}
 		
-		return 0;
+		
+		double length = 0;
+		for (Node node : tree.getNodesAsArray()) {
+			length += node.getLength();
+		}
+
+		return Math.log(tree.getNode(i).getLength() / length) - Math.log(1.0/eligbleInfectionCount);
 	}
 
 	

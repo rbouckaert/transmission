@@ -195,6 +195,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 		}
 		
 		Log.warning("\nDone");
+		Platform.exit();
 	}
 	
 	
@@ -217,7 +218,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 	
 	        BarChart barChart = new BarChart(xAxis, yAxis);
 	        barChart.setTitle("Infectors true vs inferred " + 
-	        		(includeUnsampledInput.get()? "with" : "wihtout") + " unsampled hosts");
+	        		(includeUnsampledInput.get()? "with" : "without") + " unsampled hosts");
 	
 	        XYChart.Series data = new XYChart.Series<String, Number>();
 	

@@ -365,7 +365,7 @@ public class TransmissionTreeSimulator extends Runnable {
 			for (int i = 0; i < node.getChildCount(); i++) {
 				Node child = node.getChild(i);
 				newick += toShortNewick(child, colourMap);
-				newick += "[" + colourMap.get(child)+"]";
+				newick += "[&color=" + colourMap.get(child)+"]" + ":" + node.getLength();
 				if (i < node.getChildCount() - 1) {
 					newick += ",";
 				}

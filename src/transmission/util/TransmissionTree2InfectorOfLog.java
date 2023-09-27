@@ -86,6 +86,9 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         		if (o == null) {
         			o = node.getMetaData("blockstart.t:" + partitionInput.get());
         		}
+        		if (o == null) {
+        			o = 0.5;
+        		}
         		start[i] = (Double) o;
 
         		o = node.getMetaData("end");
@@ -94,6 +97,9 @@ public class TransmissionTree2InfectorOfLog extends Runnable {
         		}
         		if (o == null) {
         			o = node.getMetaData("blockend.t:" + partitionInput.get());
+        		}
+        		if (o == null) {
+        			o = 0.5;
         		}
         		end[i] = (Double) o;
         		        		

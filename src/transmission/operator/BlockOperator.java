@@ -27,14 +27,60 @@ public class BlockOperator extends Operator {
     private RealParameter blockEndFraction;
     private IntegerParameter blockCount;
     private TreeInterface tree;
-
+    private double lowerStart, upperStart;
+    private double lowerEnd, upperEnd;
+    
     @Override
 	public void initAndValidate() {
     	blockStartFraction = blockStartFractionInput.get();
     	blockEndFraction = blockEndFractionInput.get();
     	blockCount = blockCountInput.get();
     	tree = treeInput.get();
-	}
+    	
+    	lowerStart = blockStartFraction.getLower();
+    	if (lowerStart < 0) {
+    		lowerStart = 0;
+    	}
+    	if (lowerStart > 1) {
+    		throw new IllegalArgumentException("lower bound of block start should be less than 1");
+    	}
+    	upperStart = blockStartFraction.getUpper();
+    	if (upperStart < 0) {
+    		upperStart = 0;
+    	}
+    	if (upperStart > 1) {
+    		throw new IllegalArgumentException("upper bound of block start should be less than 1");
+    	}
+    	if (upperStart < lowerStart) {
+    		throw new IllegalArgumentException("upper bound of block start should be higher than lower bound");
+    	}
+
+    	lowerEnd = blockEndFraction.getLower();
+    	if (lowerEnd < 0) {
+    		lowerEnd = 0;
+    	}
+    	if (lowerEnd > 1) {
+    		throw new IllegalArgumentException("lower bound of block end should be less than 1");
+    	}
+    	upperEnd = blockEndFraction.getUpper();
+    	if (upperEnd < 0) {
+    		upperEnd = 0;
+    	}
+    	if (upperEnd > 1) {
+    		throw new IllegalArgumentException("upper bound of block end should be less than 1");
+    	}
+    	if (upperEnd < lowerEnd) {
+    		throw new IllegalArgumentException("upper bound of block end should be higher than lower bound");
+    	}
+    	
+    	if (lowerStart > lowerEnd) {
+    		throw new IllegalArgumentException("lower bound of block start should be lower than lower bound of block end");
+    	}
+    	if (upperStart > upperEnd) {
+    		throw new IllegalArgumentException("upper bound of block start should be lower than upper bound of block end");
+    	}
+    	
+    }
 
 	@Override
 	public double proposal() {
@@ -47,17 +93,18 @@ public class BlockOperator extends Operator {
 				break;
 			case 0:
 				// make sure start == end fraction after proposal
-				double f = Randomizer.nextDouble();
+				double f = lowerStart + Randomizer.nextDouble() * (upperStart - upperEnd);
 				blockStartFraction.setValue(i, f);
 				blockEndFraction.setValue(i, f);
 				break;
 			default:
 				// move one boundary only
-				f = Randomizer.nextDouble();
 				if (Randomizer.nextBoolean()) {
-					blockStartFraction.setValue(i, f * blockEndFraction.getValue(i));
+					f = lowerStart + Randomizer.nextDouble() * (Math.min(blockEndFraction.getValue(i), upperStart) - lowerStart);
+					blockStartFraction.setValue(i, f);
 				} else {
-					blockEndFraction.setValue(i, 1-f * (1-blockStartFraction.getValue(i)));					
+					f = upperEnd - Randomizer.nextDouble() * (upperEnd - Math.max(blockStartFraction.getValue(i), lowerEnd));
+					blockEndFraction.setValue(i, 1-f);					
 				}
 			}
 			return 0;
@@ -189,7 +236,7 @@ public class BlockOperator extends Operator {
 			// add infection
 			blockCount.setValue(i, 1);
 
-			f = Randomizer.nextDouble();
+			f = lowerStart + Randomizer.nextDouble() * (upperEnd - lowerStart);
 			if (f < blockStartFraction.getValue(i)) {
 				blockStartFraction.setValue(i, f);
 			} else {

@@ -1,18 +1,19 @@
-package transmission.distribution;
+package transmission2;
+
 
 import java.util.Arrays;
 
 import beast.base.core.Description;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
-import beast.base.evolution.tree.Node;
 import beast.base.evolution.tree.TreeInterface;
 import beast.base.inference.CalculationNode;
 import beast.base.inference.parameter.IntegerParameter;
 import beast.base.inference.parameter.RealParameter;
+import transmission.distribution.ColourProvider;
 
 @Description("Helper class to convert set of transmissions encoded as node numbes and branch fractions to per node lists of transmissions")
-public class TranmissionSet extends CalculationNode {
+public class TransmissionSet extends CalculationNode {
     final public Input<IntegerParameter> nodeNrInput = new Input<>("nodeNr", "number of node having tranmission in the branch above", Validate.REQUIRED);
     final public Input<RealParameter> branchFractionInput = new Input<>("branchFraction", "fraction of branch length at which the transmission happens", Validate.REQUIRED);
     final public Input<TreeInterface> treeInput = new Input<>("tree", "tree over which to calculate a prior or likelihood");
@@ -37,37 +38,43 @@ public class TranmissionSet extends CalculationNode {
 	
 	public double [] getTransmissionForNode(int nodeNr) {
 		if (needsUpdate) {
-			Integer [] counts = new Integer[transmissionsForNode.length];
-			// allocate memory
-			for (int i = 0; i < counts.length; i++) {
-				counts[i] = 0;
-			}
-			for (Integer i : this.nodeNr.getValues()) {
-				counts[i]++;
-			}
-			for (int i = 0; i < counts.length; i++) {
-				if (transmissionsForNode[i].length != counts[i]) {
-					transmissionsForNode[i] = new double[counts[i]];
-				}
-			}
-			for (int i = 0; i < counts.length; i++) {
-				counts[i] = 0;
-			}
-			for (int k = 0; k < this.nodeNr.getDimension(); k++) { 
-				Integer i = this.nodeNr.getValue(k);
-				transmissionsForNode[i][counts[i]] = branchFraction.getValue(k);
-				counts[i]++;
-			}
-			for (int k = 0; k < this.nodeNr.getDimension(); k++) {
-				sort(transmissionsForNode[k]);
-			}
-			needsUpdate = false;
+			update();
 		}
 		
 		return transmissionsForNode[nodeNr];
 	}
 	
 	
+	private void update() {
+		Integer [] counts = new Integer[transmissionsForNode.length];
+		// allocate memory
+		for (int i = 0; i < counts.length; i++) {
+			counts[i] = 0;
+		}
+		for (Integer i : this.nodeNr.getValues()) {
+			counts[i]++;
+		}
+		for (int i = 0; i < counts.length; i++) {
+			if (transmissionsForNode[i].length != counts[i]) {
+				transmissionsForNode[i] = new double[counts[i]];
+			}
+		}
+		for (int i = 0; i < counts.length; i++) {
+			counts[i] = 0;
+		}
+		for (int k = 0; k < this.nodeNr.getDimension(); k++) { 
+			Integer i = this.nodeNr.getValue(k);
+			transmissionsForNode[i][counts[i]] = branchFraction.getValue(k);
+			counts[i]++;
+		}
+		for (int k = 0; k < this.nodeNr.getDimension(); k++) {
+			sort(transmissionsForNode[k]);
+		}
+		needsUpdate = false;
+	}
+
+
+
 	private void sort(double[] x) {
 		switch (x.length) {
 		case 0:
@@ -133,4 +140,34 @@ public class TranmissionSet extends CalculationNode {
 		needsUpdate = true;
 		return super.requiresRecalculation();
 	}
+
+
+
+	public double getMostRecentTransmission(int nr) {
+		if (needsUpdate) {
+			update();
+		}
+		return transmissionsForNode[nr][0];
+	}
+
+
+
+	public double getLeastRecentTransmission(int nr) {
+		if (needsUpdate) {
+			update();
+		}
+		return transmissionsForNode[nr][transmissionsForNode[nr].length-1];
+	}
+
+
+
+	public int infectionCount(int nr) {
+		if (needsUpdate) {
+			update();
+		}
+		return transmissionsForNode[nr].length;
+	}
+
+
+
 }

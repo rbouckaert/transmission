@@ -37,6 +37,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     final public Input<HazardFunction> transmissionHazardInput = new Input<>("transmissionHazard", "determines the hazard of transmitting an infection", Validate.REQUIRED);
     
     final public Input<Boolean> colourOnlyInput = new Input<>("colourOnly", "flag for debugging that calculates colour at base only, but does not contribute to posterior otherwise", false);
+    final public Input<Boolean> includeCoalescentInput = new Input<>("includeCoalescent", "flag for debugging that includes contribution from coalescent to posterior if true", true);
     
     
     
@@ -130,7 +131,12 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		return logP;
     	}
 
-    	logP = calculateCoalescent();
+		segments = collectSegments();
+
+		if (includeCoalescentInput.get()) {
+    		logP = calculateCoalescent();
+    	}
+    	
     	logP += calcTransmissionLikelihood();
     	return logP;
     }
@@ -288,7 +294,6 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     private List<SegmentIntervalList> segments;
 
     public double calculateCoalescent() {
-		segments = collectSegments();
 		double logP = 0;
 		for (IntervalList intervals : segments) {
 			if (intervals != null) {

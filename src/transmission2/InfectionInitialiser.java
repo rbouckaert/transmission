@@ -11,6 +11,7 @@ import beast.base.inference.StateNode;
 import beast.base.inference.StateNodeInitialiser;
 import beast.base.inference.parameter.IntegerParameter;
 import beast.base.inference.parameter.RealParameter;
+import beast.base.util.Randomizer;
 
 @Description("Provide valid initialisation for transmission set")
 public class InfectionInitialiser extends BEASTObject implements StateNodeInitialiser {
@@ -31,7 +32,7 @@ public class InfectionInitialiser extends BEASTObject implements StateNodeInitia
 		branchFraction.setDimension(n-1);
 		for (int i = 0; i < n-1; i++) {
 			nodeNrs.setValue(i, i);
-			branchFraction.setValue(i, 0.5);
+			branchFraction.setValue(i, Randomizer.nextDouble());
 		}
 	}
 

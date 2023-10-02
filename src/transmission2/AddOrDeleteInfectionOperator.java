@@ -22,6 +22,7 @@ public class AddOrDeleteInfectionOperator extends Operator {
 
     private TreeInterface tree;
     private TransmissionSet transmissions;
+    private int oldDimension;
 
     @Override
 	public void initAndValidate() {
@@ -37,6 +38,7 @@ public class AddOrDeleteInfectionOperator extends Operator {
 		IntegerParameter nodeNrs = transmissions.nodeNrInput.get();
 		RealParameter branchFraction = transmissions.branchFractionInput.get();
 		final int n = nodeNrs.getDimension();
+		oldDimension = n;
 
 		if (Randomizer.nextBoolean()) {
 			// add transmission
@@ -60,8 +62,8 @@ public class AddOrDeleteInfectionOperator extends Operator {
 				return Double.NEGATIVE_INFINITY;
 			}
 			for (int j = i; j < n - 1; j++) {
-				nodeNrs.setValue(i, nodeNrs.getValue(i+1));
-				branchFraction.setValue(i, branchFraction.getValue(i+1));
+				nodeNrs.setValue(j, nodeNrs.getValue(j+1));
+				branchFraction.setValue(j, branchFraction.getValue(j+1));
 			}
 			nodeNrs.setDimension(n - 1);
 			branchFraction.setDimension(n - 1);
@@ -113,4 +115,5 @@ public class AddOrDeleteInfectionOperator extends Operator {
         list.add(transmissionsInput.get().nodeNrInput.get());
         return list;
     }
+    
 }

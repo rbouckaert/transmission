@@ -16,6 +16,14 @@
         <provider classname="transmission.util.InfectionCount"/>
         <provider classname="transmission.util.ColourLogger"/>
         <provider classname="transmission.util.InfectorOfLogger"/>
+
+
+        <provider classname="transmission2.TransmissionTreeLikelihood"/>
+        <provider classname="transmission2.TransmissionSet"/>
+        <provider classname="transmission2.InfectionMover"/>
+        <provider classname="transmission2.AddOrDeleteInfectionOperator"/>
+        <provider classname="transmission2.InfectionInitialiser"/>
+        <provider classname="transmission2.InfectorOfLogger"/>
 	</service>    
 	
 	

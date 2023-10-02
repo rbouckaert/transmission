@@ -26,7 +26,7 @@
                 	<tree idref="Tree.t:dna"/>
                 	<blockstart id="blockstart.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
                 	<blockend   id="blockend.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
-                	<blockcount id="blockcount.t:dna" spec="parameter.IntegerParameter" value="0 3 -1" lower="-1"/>
+                	<blockcount id="blockcount.t:dna" spec="parameter.IntegerParameter" value="0 2 -1" lower="-1"/>
 		            <populationModel id="ConstantTransmissionPopulation.t:dna" spec="ConstantPopulation">
         		        <parameter id="transmissionPopSize.t:dna" spec="parameter.RealParameter" name="popSize">1.0</parameter>
 		            </populationModel>

@@ -10,7 +10,7 @@
 			<!-- estimated transmission parameters -->
             <stateNode id="blockstart.t:dna" spec="parameter.RealParameter" dimension="$(dim=2)" value="0.5" lower="0" upper="1.0"/>
             <stateNode id="blockend.t:dna" spec="parameter.RealParameter" dimension="$(dim)" value="0.5" lower="0" upper="1.0"/>
-            <stateNode id="blockcount.t:dna" spec="parameter.IntegerParameter" dimension="$(dim)" value="3 0" lower="-1"/>
+            <stateNode id="blockcount.t:dna" spec="parameter.IntegerParameter" dimension="$(dim)" value="0 2" lower="-1"/>
         </state>
         
         <distribution id="prior" spec="CompoundDistribution">

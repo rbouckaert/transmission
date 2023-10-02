@@ -1,6 +1,7 @@
 package transmission2;
 
 
+import java.text.DecimalFormat;
 import java.util.Arrays;
 
 import beast.base.core.Description;
@@ -25,6 +26,8 @@ public class TransmissionSet extends CalculationNode {
     
 	private double [][] transmissionsForNode;
 	private boolean needsUpdate = true;
+
+	private DecimalFormat f = new DecimalFormat("#.####");
 
 	@Override
 	public void initAndValidate() {
@@ -67,7 +70,7 @@ public class TransmissionSet extends CalculationNode {
 			transmissionsForNode[i][counts[i]] = branchFraction.getValue(k);
 			counts[i]++;
 		}
-		for (int k = 0; k < this.nodeNr.getDimension(); k++) {
+		for (int k = 0; k < transmissionsForNode.length; k++) {
 			sort(transmissionsForNode[k]);
 		}
 		needsUpdate = false;
@@ -113,7 +116,7 @@ public class TransmissionSet extends CalculationNode {
 		int leafCount = tree.getLeafNodeCount();
 		Integer [] counts = new Integer[leafCount * 2 - 1];
 		for (int i = 0; i < counts.length; i++) {
-			counts[i] = 0;
+			counts[i] = -1;
 		}
 		for (Integer i : nodeNr.getValues()) {
 			counts[i]++;
@@ -167,7 +170,25 @@ public class TransmissionSet extends CalculationNode {
 		}
 		return transmissionsForNode[nr].length;
 	}
+	
 
+	@Override
+	public String toString() {
+		if (needsUpdate) {
+			update();
+		}
+		StringBuilder b = new StringBuilder();
+		for (int i = 0; i < transmissionsForNode.length; i++) {
+			if (transmissionsForNode[i].length > 0) {
+				b.append(i +":");
+				for (double d : transmissionsForNode[i]) {
+					b.append(f.format(d) + " ");
+				}
+				b.append("\n");
+			}
+		}
+		return b.toString();
+	}
 
 
 }

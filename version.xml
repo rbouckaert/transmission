@@ -21,9 +21,11 @@
         <provider classname="transmission2.TransmissionTreeLikelihood"/>
         <provider classname="transmission2.TransmissionSet"/>
         <provider classname="transmission2.InfectionMover"/>
+        <provider classname="transmission2.InfectionCount"/>
         <provider classname="transmission2.AddOrDeleteInfectionOperator"/>
         <provider classname="transmission2.InfectionInitialiser"/>
         <provider classname="transmission2.InfectorOfLogger"/>
+        <provider classname="transmission2.GeometricDistribution"/>
 	</service>    
 	
 	

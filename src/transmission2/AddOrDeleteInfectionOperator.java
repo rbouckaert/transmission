@@ -22,7 +22,8 @@ public class AddOrDeleteInfectionOperator extends Operator {
 
     private TreeInterface tree;
     private TransmissionSet transmissions;
-    private int oldDimension;
+    private int eligbleInfectionCount;
+	private int [] colourAtBase;
 
     @Override
 	public void initAndValidate() {
@@ -38,7 +39,6 @@ public class AddOrDeleteInfectionOperator extends Operator {
 		IntegerParameter nodeNrs = transmissions.nodeNrInput.get();
 		RealParameter branchFraction = transmissions.branchFractionInput.get();
 		final int n = nodeNrs.getDimension();
-		oldDimension = n;
 
 		if (Randomizer.nextBoolean()) {
 			// add transmission
@@ -52,8 +52,10 @@ public class AddOrDeleteInfectionOperator extends Operator {
 			double h = Randomizer.nextDouble();
 			nodeNrs.setValue(n, i);
 			branchFraction.setValue(n, h);
-			
-			return 0;
+
+			eligbleInfectionCount = calcEligableInfectionCount();
+			//return 0;
+			return Math.log(1.0/ nodeNrs.getDimension()) - Math.log(1.0/eligbleInfectionCount);
 		} else {
 			// delete transmission
 			int i = chooseInfectionToRemove();
@@ -67,17 +69,18 @@ public class AddOrDeleteInfectionOperator extends Operator {
 			}
 			nodeNrs.setDimension(n - 1);
 			branchFraction.setDimension(n - 1);
+
+			return -Math.log(1.0/ nodeNrs.getDimension()) + Math.log(1.0/eligbleInfectionCount);
+			// return 0;
+			//return Math.log(1.0/eligbleInfectionCount) - Math.log(1.0/ tree.getNodeCount());
 		}
-		
-		return 0;
 	}
 
-	private int chooseInfectionToRemove() {
-		int [] colourAtBase = new int[tree.getNodeCount()];
+	private int calcEligableInfectionCount() {
+		colourAtBase = new int[tree.getNodeCount()];
 		transmissions.getColour(colourAtBase);
-		int n = tree.getLeafNodeCount();
-		
 		int eligbleInfectionCount = 0;
+		int n = tree.getLeafNodeCount();
 		for (int i = 0; i < colourAtBase.length; i++) {
 			if (transmissions.infectionCount(i) == 1) {
 				if (!(colourAtBase[i] < n && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
@@ -87,6 +90,13 @@ public class AddOrDeleteInfectionOperator extends Operator {
 				eligbleInfectionCount += transmissions.infectionCount(i);
 			}
 		}
+		return eligbleInfectionCount;
+	}
+
+	private int chooseInfectionToRemove() {
+		int n = tree.getLeafNodeCount();
+		
+		eligbleInfectionCount = calcEligableInfectionCount();
 		if (eligbleInfectionCount == 0) {
 			return -1;
 		}

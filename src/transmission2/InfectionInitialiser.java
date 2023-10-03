@@ -25,7 +25,7 @@ public class InfectionInitialiser extends BEASTObject implements StateNodeInitia
 
 	@Override
 	public void initStateNodes() {
-		int n = treeInput.get().getNodeCount();
+		int n = treeInput.get().getLeafNodeCount()+1;
 		IntegerParameter nodeNrs = transmissionsInput.get().nodeNrInput.get();
 		RealParameter branchFraction = transmissionsInput.get().branchFractionInput.get();
 		nodeNrs.setDimension(n-1);

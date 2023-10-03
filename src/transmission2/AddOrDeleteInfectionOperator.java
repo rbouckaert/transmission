@@ -8,6 +8,7 @@ import java.util.List;
 import beast.base.core.Description;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
+import beast.base.evolution.tree.Node;
 import beast.base.evolution.tree.TreeInterface;
 import beast.base.inference.Operator;
 import beast.base.inference.StateNode;
@@ -40,6 +41,11 @@ public class AddOrDeleteInfectionOperator extends Operator {
 		RealParameter branchFraction = transmissions.branchFractionInput.get();
 		final int n = nodeNrs.getDimension();
 
+		length = 0;
+		for (Node node : tree.getNodesAsArray()) {
+			length += node.getLength();
+		}
+
 		if (Randomizer.nextBoolean()) {
 			// add transmission
 			
@@ -48,14 +54,15 @@ public class AddOrDeleteInfectionOperator extends Operator {
 			branchFraction.setDimension(n+1);
 			
 			// randomly pick a branch (exclude root)
-			int i = Randomizer.nextInt(tree.getNodeCount() - 1);
-			double h = Randomizer.nextDouble();
+			int i = chooseBlockToInsert();
+			double h = r / tree.getNode(i).getLength();
+			
 			nodeNrs.setValue(n, i);
 			branchFraction.setValue(n, h);
 
 			eligbleInfectionCount = calcEligableInfectionCount();
+			return -Math.log(tree.getNode(i).getLength()/ length) + Math.log(1.0/eligbleInfectionCount);
 			//return 0;
-			return Math.log(1.0/ nodeNrs.getDimension()) - Math.log(1.0/eligbleInfectionCount);
 		} else {
 			// delete transmission
 			int i = chooseInfectionToRemove();
@@ -70,12 +77,29 @@ public class AddOrDeleteInfectionOperator extends Operator {
 			nodeNrs.setDimension(n - 1);
 			branchFraction.setDimension(n - 1);
 
-			return -Math.log(1.0/ nodeNrs.getDimension()) + Math.log(1.0/eligbleInfectionCount);
+			return Math.log(tree.getNode(i).getLength()/ length) - Math.log(1.0/eligbleInfectionCount);
 			// return 0;
 			//return Math.log(1.0/eligbleInfectionCount) - Math.log(1.0/ tree.getNodeCount());
 		}
 	}
 
+	
+	private double length = 0, r;
+	private int chooseBlockToInsert() {
+		r = Randomizer.nextDouble() * length;
+		int i = 0;
+		while (r > 0) {
+			Node node = tree.getNode(i);
+			if (r < node.getLength()) {
+				return i;
+			}
+			r = r - node.getLength();
+			i++;
+		}
+		throw new RuntimeException("Programmer error: should not get here");
+	}
+
+	
 	private int calcEligableInfectionCount() {
 		colourAtBase = new int[tree.getNodeCount()];
 		transmissions.getColour(colourAtBase);

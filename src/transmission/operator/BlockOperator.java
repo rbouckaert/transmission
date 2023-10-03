@@ -203,9 +203,6 @@ public class BlockOperator extends Operator {
 	}
 	
 	private int chooseBlockToInsert() {
-//		int i = Randomizer.nextInt(tree.getNodeCount()-1);
-//		return i;
-		
 		double length = 0;
 		for (Node node : tree.getNodesAsArray()) {
 			length += node.getLength();

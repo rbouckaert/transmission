@@ -188,10 +188,11 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     			double logPBlock = 0;
     			double branchlength = nodes[i].getLength();
     			for (int j = 0; j < times.length-1; j++) {
-    				double start = nodes[i].getHeight() + branchlength * times[i];
-    				double end   = nodes[i].getHeight() + branchlength * times[i+1];
-    				logPBlock += logh_tr(end, start);
-        			logPBlock += logS_s(end, d);
+    				double start = nodes[i].getHeight() + branchlength * times[j];
+    				double end   = nodes[i].getHeight() + branchlength * times[j+1];
+					logPBlock += logh_tr(end, start);
+					logPBlock += logS_tr(end, d); 
+					logPBlock += logS_s(end, d);
     			}
     			logP += logPBlock;
     		}

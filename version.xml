@@ -1,4 +1,4 @@
-<addon name="transmission" version="0.0.1">
+<package name="transmission" version="0.0.1">
     <depends on="BEAST.base" atleast="2.7.5"/>
     <depends on="BEAST.app" atleast="2.7.5"/>
 
@@ -34,4 +34,4 @@
 	<packageapp description="Calculate coverage of who infected who" class="transmission.util.InfectedByCoverageCalculator" args=""/>
     <packageapp description="Simulates transmission tree" class="transmission.util.TransmissionTreeSimulator" args=""/>
 	
-</addon>
+</package>

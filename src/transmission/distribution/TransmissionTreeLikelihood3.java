@@ -7,6 +7,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.commons.math.MathException;
+import org.apache.commons.math.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 
 import beast.base.core.Description;
@@ -251,37 +253,14 @@ System.err.println("#node " + (i+1));
     	// contribution of cases in blocks
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
     		if (blockCount.getValue(i) > 0) {
-    			double logPBlock = 0;
-                
-//    			System.err.println("#node " + (i+1));
-    			// contribution of not being sampled
     			double branchlength = nodes[i].getLength();
     			double start = nodes[i].getHeight() + branchlength * blockStartFraction.getValue(i);
     			double end   = nodes[i].getHeight() + branchlength * blockEndFraction.getValue(i);
     			int blocks = blockCount.getValue(i);
     			
-    			
-    			// TODO verify that the +1 and *2 are correct
-    			double delta = (end - start) / blocks;
-    			double t = end;
-    			for (int j = 0; j < blocks; j++) {
-    				logPBlock += logS_s(t, d);
-    				t = t - delta;
-    			}
-    			
-    			// contribution of causing infections Poisson model with rate lambda_tr
-    			double tau = end - start;
-//    			PoissonDistribution p = new PoissonDistributionImpl(lambda_tr.getValue() * tau);
-//    			logPBlock += Math.log(p.probability(blocks));
-    			
-    			logPBlock += blocks * (Math.log(lambda_tr.getValue() * tau));
-    			for (int j = 2; j <= blocks; j++) {
-    				logPBlock -= Math.log(j);
-    			}
-    			logPBlock += -lambda_tr.getValue() * tau;
-    			
-    			logPBlock -= Math.log(1.0 - Math.exp(-lambda_tr.getValue() * tau));
-    			
+    			double logPBlock = getLogBlockLike(end-start, blocks, end - d);
+                
+    			System.err.println("#node " + (i+1) + " " + logPBlock);
 //    			System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().getHeight() - start) + " = " + tau + " logPBlock=" + logPBlock);    			
     			
     			logP += logPBlock;
@@ -312,7 +291,7 @@ System.err.println("#node " + (i+1));
     private double logh_tr(double t, double d) {
     	return transmissionHazard.logH(tree.getRoot().getHeight() - d, tree.getRoot().getHeight() - t);
     	// return transmissionHazard.logH(t, d);
-    }getBlockLike
+    }
 
     private List<SegmentIntervalList> segments;
 
@@ -362,7 +341,7 @@ System.err.println("#node " + (i+1));
 		@Override
 		public int getSampleCount() {
 			throw new RuntimeException("Not implemented yet");
-		}getBlockLike
+		}
 
 		@Override
 		public double getInterval(int i) {
@@ -700,8 +679,8 @@ System.err.println("#node " + (i+1));
 	}
 
 	public double logGetIndivCondition(double p0, double t, double d) {
-	    final double TT = 1 - Math.exp(-(1-p0) + logS_tr(t, d)  + logS_s(t, d));
-	    final double logIndivCond = Math.log(TT);
+	    final double TT = 1 - FastMath.exp(-(1-p0) + logS_tr(t, d)  + logS_s(t, d));
+	    final double logIndivCond = FastMath.log(TT);
 	    System.err.println("logGetIndivCondition(" +p0+"," + t +"," + d+") = " + logIndivCond);
 	    return logIndivCond;
 	}	
@@ -714,7 +693,7 @@ System.err.println("#node " + (i+1));
 	}
 
 	private double getRho(double phi) { 
-	    return (1 - Math.exp(-phi+logS_tr(100, 0) + logS_s(100, 0)));
+	    return (1 - FastMath.exp(-phi+logS_tr(100, 0) + logS_s(100, 0)));
 	}
 
 	final static double tol2=1e-7;
@@ -722,9 +701,9 @@ System.err.println("#node " + (i+1));
 	private double getBlockCondition(double p0, double rho, double atr,double btr, double Yr) {
 	    double Z =0;// # init for the sum 
 	    int n=1;  
-	    int term = 1; // initialize the term at something > tol 
+	    double term = 1; // initialize the term at something > tol 
 	    while ((term > tol2) & (n < maxn)) {
-	        term =   (Math.pow(1-rho, n) * pgamma(Yr, n*atr, btr);
+	        term = FastMath.pow(1.0 - rho, n) * pgamma(Yr, n * atr, btr);
 	        Z = Z+term;
 	        n=n+1;
 	    }
@@ -735,9 +714,30 @@ System.err.println("#node " + (i+1));
 	    return Z; 
 	} 	
 	
-	private double getBlockLike(double tblock, int n, double Yr, double rho, double atr, double btr, double p0) {
-	    double blockLike = (1-Math.pow(rho,n))*dgamma(tblock, n*atr, btr) / getBlockCondition(p0,rho, atr, btr, Yr);
-	    return blockLike;		
+	private double getLogBlockLike(double tblock, int n, double Yr) {
+	    double blockLike = (1-FastMath.pow(rho,n)) * dgamma(tblock, n*atr, btr) / getBlockCondition(p0,rho, atr, btr, Yr);
+	    return FastMath.log(blockLike);		
+	}
+	
+	// gives the density
+	double dgamma(double x, double alpha, double rate) {
+		if (x < 0) {
+			throw new IllegalArgumentException("x should be non-negative");
+		}
+        return FastMath.pow(x * rate, alpha - 1) * rate /  FastMath.exp(-x * rate) / FastMath.exp(Gamma.logGamma(alpha));
+	}
+	
+	//  gives the cumulative distribution function
+	double pgamma(double x, double shape, double rate) {
+		if (x <= 0) {
+			return 0;
+		}
+		try {
+			return Gamma.regularizedGammaP(shape, x * rate);
+		} catch (MathException e) {
+			e.printStackTrace();
+			return 0;
+		}	
 	}
 	
 	

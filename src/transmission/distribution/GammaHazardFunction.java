@@ -38,7 +38,7 @@ public class GammaHazardFunction extends HazardFunction {
 	}
 	
 	DecimalFormat f = new DecimalFormat("#.####");
-	DecimalFormat f4 = new DecimalFormat("#.####");
+	DecimalFormat f4 = new DecimalFormat("#.######");
 	
 	@Override
 	public double logS(double t, double d) {
@@ -51,7 +51,7 @@ public class GammaHazardFunction extends HazardFunction {
 			e.printStackTrace();
 		}
 		
-//System.err.println("logS" + getID() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") \t= " + f4.format(logS));		
+System.err.println("logS" + getID() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") \t= " + f4.format(logS));		
 //System.err.println("logS" + getID() + "(" + f.format(t-d) + ") # = " + f4.format(logS));		
 		return logS;
 	}
@@ -69,7 +69,7 @@ public class GammaHazardFunction extends HazardFunction {
 	public double logH(double t, double d) {
 		update();
 		final double logH = Math.log(constant.getArrayValue()) + samplingDist.logDensity(t - d);
-//System.err.println("logh" + getID() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") = " + f4.format(logH));		
+System.err.println("logh" + getID() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") = " + f4.format(logH));		
 //System.err.println("logh" + getID() + "(" + f.format(t-d) + ") # = " + f4.format(logH));		
 		return logH;
 	}
@@ -81,5 +81,13 @@ public class GammaHazardFunction extends HazardFunction {
 		update();
 		double t = samplingDist.inverseCumulativeProbability(p);
 		return t;
+	}
+	
+	public double getRate() {
+		if (rate != null) {
+			return rate.getArrayValue();
+		} else {
+			return 1.0/scale.getArrayValue();
+		}
 	}
 }

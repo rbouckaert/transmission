@@ -59,7 +59,7 @@ public class SimpleTransmissionLikelihoodTest3 {
 	}
 
 	@Test
-	public void testSimpleCase1b() {
+	public void testSimpleCase2() {
 		TreeParser tree = new TreeParser("(Bob:1.7,Eve:2.1);");
 		
         ConstantPopulation cp = new ConstantPopulation();
@@ -229,52 +229,52 @@ public class SimpleTransmissionLikelihoodTest3 {
 //        //assertEquals( -26.10661, transmissionLikelihood, 1e-5);
 //	}	
 //
-//	@Test
-//	public void testSimpleCase4() {
-//		TreeParser tree = new TreeParser("(t3:0.3307722867,(t4:0.7084983373,t5:0.6330101104):0.6262222228);");
-//		
-//        ConstantPopulation cp = new ConstantPopulation();
-//        cp.initByName("popSize", Double.toString(1.0));
-//
-//        Node [] nodes = tree.getNodesAsArray();
-//        
-//        double h = tree.getRoot().getHeight();
-//        double e4 = (h-0.73 - nodes[2].getHeight()) / nodes[2].getLength(); 
-//        double e3 = (h-0.12 - nodes[0].getHeight()) / nodes[0].getLength(); 
-//
-//        double s4 = (h-1.05 - nodes[2].getHeight()) / nodes[2].getLength(); 
-//        double s3 = e3; 
-//        
-//        
-//        RealParameter blockStart = new RealParameter(); blockStart.initByName("dimension", 4,       "value", s3 + " 0.5 " + s4 + " 0.5" );
-//        RealParameter blockEnd = new RealParameter(); blockEnd.initByName("dimension", 4,           "value", e3 + " 0.5 " + e4 + " 0.5");
-//        IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 4, "value", "0 -1 2 -1");
-//        IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 5,         "value", "0 1 2 1 1");
-//        
-//        HazardFunction samplingHazard = new GammaHazardFunction();
-//        samplingHazard.initByName("C", "1.0", "shape", "2.5", "rate", "10.0");
-//        samplingHazard.setID("s");
-//        
-//        HazardFunction transmissionHazard = new GammaHazardFunction();
-//        transmissionHazard.initByName("C", "1.5", "shape", "2.0", "rate", "10.0");
-//        transmissionHazard.setID("tr");
-//        
-//        TransmissionTreeLikelihood3 coal = new TransmissionTreeLikelihood3();
-//        coal.initByName(
-//        		"tree", tree,
-//        		"populationModel", cp, 
-//        		"blockstart", blockStart, 
-//        		"blockend", blockEnd, 
-//        		"blockcount", blockcount, 
-//        		//"colour", colour,
-//        		"endTime", (1.3347-1.5)+ "",
-//        		"samplingHazard", samplingHazard,
-//        		"transmissionHazard", transmissionHazard,
-//        		"lambda", "4.0");
-//        
-//        coal.calcColourAtBase();
-//        double transmissionLikelihood = coal.calcTransmissionLikelihood();
-//        
-//        assertEquals( -14.726, transmissionLikelihood, 1e-3);
-//	}
+	@Test
+	public void testSimpleCase4() {
+		TreeParser tree = new TreeParser("(t3:0.3307722867,(t4:0.7084983373,t5:0.6330101104):0.6262222228);");
+		
+        ConstantPopulation cp = new ConstantPopulation();
+        cp.initByName("popSize", Double.toString(1.0));
+
+        Node [] nodes = tree.getNodesAsArray();
+        
+        double h = tree.getRoot().getHeight();
+        double e4 = (h-0.73 - nodes[2].getHeight()) / nodes[2].getLength(); 
+        double e3 = (h-0.12 - nodes[0].getHeight()) / nodes[0].getLength(); 
+
+        double s4 = (h-1.05 - nodes[2].getHeight()) / nodes[2].getLength(); 
+        double s3 = e3; 
+        
+        
+        RealParameter blockStart = new RealParameter(); blockStart.initByName("dimension", 4,       "value", s3 + " 0.5 " + s4 + " 0.5" );
+        RealParameter blockEnd = new RealParameter(); blockEnd.initByName("dimension", 4,           "value", e3 + " 0.5 " + e4 + " 0.5");
+        IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 4, "value", "0 -1 2 -1");
+        IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 5,         "value", "0 1 2 1 1");
+        
+        HazardFunction samplingHazard = new GammaHazardFunction();
+        samplingHazard.initByName("C", "0.9", "shape", "2.5", "rate", "10.0");
+        samplingHazard.setID("s");
+        
+        HazardFunction transmissionHazard = new GammaHazardFunction();
+        transmissionHazard.initByName("C", "1.5", "shape", "2.0", "rate", "10.0");
+        transmissionHazard.setID("tr");
+        
+        TransmissionTreeLikelihood3 coal = new TransmissionTreeLikelihood3();
+        coal.initByName(
+        		"tree", tree,
+        		"populationModel", cp, 
+        		"blockstart", blockStart, 
+        		"blockend", blockEnd, 
+        		"blockcount", blockcount, 
+        		//"colour", colour,
+        		"endTime", (1.3347-1.5)+ "",
+        		"samplingHazard", samplingHazard,
+        		"transmissionHazard", transmissionHazard,
+        		"lambda", "4.0");
+        
+        coal.calcColourAtBase();
+        double transmissionLikelihood = coal.calcTransmissionLikelihood();
+        
+        assertEquals( -11.24239, transmissionLikelihood, 1e-3);
+	}
 }

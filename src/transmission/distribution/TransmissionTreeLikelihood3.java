@@ -188,10 +188,10 @@ public class TransmissionTreeLikelihood3 extends TreeDistribution {
 
 
     	
-System.err.println("\n#contribution of sampled cases");
+//System.err.println("\n#contribution of sampled cases");
 		// contribution of sampled cases
     	for (int i = 0; i < n; i++) {
-System.err.println("#node " + (i+1));
+//System.err.println("#node " + (i+1));
 			double logP1 = 0;
     		// contribution of not being sampled
     		SegmentIntervalList intervals = segments.get(i);
@@ -205,56 +205,60 @@ System.err.println("#node " + (i+1));
     			logP1 +=  logS_tr(start, end); // further contribution below
     		}
     		logP1 -= logGetIndivCondition(p0, start, d);
-System.err.println("#node " + (i+1) + " " + logP1);
+//System.err.println("#node " + (i+1) + " " + logP1);
 			logP += logP1;
     	}
 
-System.err.println("\n#transmissions from sampled cases");
+//System.err.println("\n#transmissions from sampled cases");
     	// further contribution of causing infections
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
     		int baseColour = colourAtBase[i];
     		int parent = nodes[i].getParent().getNr();
     		int parentColour = colourAtBase[parent];
     		if (baseColour != parentColour && parentColour < n) {
-System.err.println("#node " + (i+1));
+//System.err.println("#node " + (i+1));
     			double tInf0 = segments.get(parentColour).birthTime;
     			Node node = nodes[i];
     			double tInf1 = node.getHeight() + node.getLength() * blockEndFraction.getArrayValue(node.getNr());
-    			logP += logh_tr(tInf0, tInf1);
+    			double logP1 = logh_tr(tInf0, tInf1); 
+    			logP += logP1;
     		}
     	}
     	
-System.err.println("\n#contribution of unsampled cases");
+//System.err.println("\n#contribution of unsampled cases");
     	// contribution of unsampled cases
     	for (int i = n; i < tree.getNodeCount(); i++) {
     		if (colourAtBase[i] >= n) {
-System.err.println("#node " + (i+1));
+//System.err.println("#node " + (i+1));
 
     			// contribution of not being sampled
         		SegmentIntervalList intervals = segments.get(i);
         		if (intervals != null) {
         			double start = intervals.birthTime;
-        			logP += logS_s(start, d);
+        			Double logP1 = logS_s(start, d);
         			// contribution of causing infections
         			logP += logS_tr(start, d); // further contribution below
             		logP -= logGetIndivCondition(p0, start, d);
+            		
+            		logP += logP1;
         		}
     		}
     	}
     	
-System.err.println("\n#transmissions from unsampled cases");
+//System.err.println("\n#transmissions from unsampled cases");
 		// further contribution of causing infections
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
     		int baseColour = colourAtBase[i];
     		int parent = nodes[i].getParent().getNr();
     		int parentColour = colourAtBase[parent];
     		if (baseColour != parentColour && parentColour >= n) {
-System.err.println("#node " + (i+1));
+//System.err.println("#node " + (i+1));
 
     			double tInf0 = segments.get(parentColour).birthTime;
     			Node node = nodes[i];
     			double tInf1 = node.getHeight() + node.getLength() * blockEndFraction.getArrayValue(node.getNr());
-    			logP += logh_tr(tInf0, tInf1);
+    			double logP1 = logh_tr(tInf0, tInf1);
+    			logP += logP1;
     		}
     	}
     	
@@ -269,7 +273,7 @@ System.err.println("#node " + (i+1));
     			
     			double logPBlock = getLogBlockLike(end - start, blocks, end - d);
                 
-    			System.err.println("#node " + (i+1) + " " + logPBlock);
+//    			System.err.println("#node " + (i+1) + " " + logPBlock);
 //    			System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().getHeight() - start) + " = " + tau + " logPBlock=" + logPBlock);    			
     			
     			logP += logPBlock;
@@ -690,7 +694,7 @@ System.err.println("#node " + (i+1));
 	public double logGetIndivCondition(double p0, double t, double d) {
 	    final double TT = 1 - FastMath.exp(-(1-p0) + logS_tr(t, d)  + logS_s(t, d));
 	    final double logIndivCond = FastMath.log(TT);
-	    System.err.println("logGetIndivCondition(" +p0+"," + t +"," + d+") = " + logIndivCond);
+//	    System.err.println("logGetIndivCondition(" +p0+"," + (t - d)+") = " + logIndivCond);
 	    return logIndivCond;
 	}	
 
@@ -726,7 +730,7 @@ System.err.println("#node " + (i+1));
 	private double getLogBlockLike(double tblock, int n, double Yr) {
 	    double blockLike = (1-FastMath.pow(rho,n)) * dgamma(tblock, n*atr, btr) / getBlockCondition(p0,rho, atr, btr, Yr);
 	    double logBlockLike = FastMath.log(blockLike);
-	    System.err.println("blockLike(" +tblock+"," + n +"," + Yr+") = " + blockLike);
+//	    System.err.println("blockLike(" +tblock+"," + n +"," + Yr+") = " + blockLike);
 	    return logBlockLike;
 	}
 	

@@ -51,7 +51,7 @@ public class GammaHazardFunction extends HazardFunction {
 			e.printStackTrace();
 		}
 		
-System.err.println("logS" + getID() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") \t= " + f4.format(logS));		
+//System.err.println("logS" + getID() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") \t= " + f4.format(logS));		
 //System.err.println("logS" + getID() + "(" + f.format(t-d) + ") # = " + f4.format(logS));		
 		return logS;
 	}
@@ -69,7 +69,7 @@ System.err.println("logS" + getID() + "(" + f.format(t) + "-" + f.format(d) + "=
 	public double logH(double t, double d) {
 		update();
 		final double logH = Math.log(constant.getArrayValue()) + samplingDist.logDensity(t - d);
-System.err.println("logh" + getID() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") = " + f4.format(logH));		
+//System.err.println("logh" + getID() + "(" + f.format(t) + "-" + f.format(d) + "=" + f.format(t-d) + ") = " + f4.format(logH));		
 //System.err.println("logh" + getID() + "(" + f.format(t-d) + ") # = " + f4.format(logH));		
 		return logH;
 	}

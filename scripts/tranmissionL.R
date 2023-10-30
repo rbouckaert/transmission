@@ -111,6 +111,52 @@ getBlockCondition = function(p0, rho, atr,btr, Yr, tol=1e-7, maxn = 1e6, output=
     } 
 
 
-getBlockLike =function(tblock,n, Yr, rho,atr,btr, p0) {
-    (1-rho^n)*dgamma(tblock, shape=n*atr, rate=btr) / getBlockCondition(p0,rho, atr, btr, Yr)
+getBlockLike =function(tblock, bc, Yr, rho,atr,btr, p0) {
+    (1-rho^bc)*dgamma(tblock, shape=bc*atr, rate=btr) / getBlockCondition(p0,rho, atr, btr, Yr)
 }
+
+
+
+
+
+
+# Test 3
+
+c1 = htr(0.85 - 0.5)*Str(1.7-0.5)*Ss(1.445-0.5)*hs(1.445-0.5) /getIndivCondition(p0,1.7-0.5)
+c2 = Str(1.7-0.85)*Ss(1.006-0.85)*hs(1.006-0.85)/getIndivCondition(p0, 1.7-0.85)
+c3 = Str(1.7-0.15)*htr(0.35-0.15)*Ss(0.53-0.15)*hs(0.53-0.15) /getIndivCondition(p0,1.7-0.15)
+c4 = Str(1.7-0.72)*htr(0.96-0.72)*Ss(1.53-0.72)*hs(1.53-0.72)/getIndivCondition(p0, 1.7-0.72)
+c5 = Str(1.7-1.33)*Ss(1.459- 1.33)*hs(1.459-1.33) /getIndivCondition(p0, 1.7-1.33)
+c0n6 = Ss(1.7-0)*Str(1.7-0)*htr(0.22)*htr(0.15) /getIndivCondition(p0, 1.7)
+b1 = getBlockLike(0.5-0.22, bc = 4,Yr = 1.7-0.22, rho, atr, btr, p0)
+b2 = getBlockLike(0.72-0.35, bc = 3,Yr = 1.7-0.35, rho, atr, btr, p0)
+b3 = getBlockLike(1.33-0.96, bc = 2,Yr = 1.7-0.96, rho, atr, btr, p0)
+
+L = c1*c2*c3*c4*c5*c0n6*b1*b2*b3
+L
+
+## [1] 7.643214e-05
+
+log(L)
+
+
+log(c1)
+log(c2)
+log(c3)
+log(c4)
+log(c5)
+log(c0n6)
+log(b1)
+log(b2)
+log(b3)
+
+
+# Test 4
+
+c3 = Str(1.5-0.12)*Ss(0.3308-0.12)*hs(0.3308-0.12)/getIndivCondition(p0, 1.5-0.12)
+c5 = Str(1.5-1.05)*Ss(1.2592-1.05)*hs(1.2592-1.05)/getIndivCondition(p0, 1.5-1.05)
+c4 = Str(1.5)*htr(0.12)*htr(0.73)*Ss(1.3347)*hs(1.3347)/getIndivCondition(p0, 1.5)
+b=getBlockLike(1.05-0.73, bc = 2,Yr = 1.5-0.73, rho, atr, btr, p0)
+
+logL4 = log(c3)+log(c5)+log(c4)+log(b) 
+logL4

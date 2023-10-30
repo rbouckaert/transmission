@@ -43,6 +43,8 @@ public class TransmissionTreeLikelihood3 extends TreeDistribution {
     final public Input<Boolean> colourOnlyInput = new Input<>("colourOnly", "flag for debugging that calculates colour at base only, but does not contribute to posterior otherwise", false);
     final public Input<Boolean> includeCoalescentInput = new Input<>("includeCoalescent", "flag for debugging that includes contribution from coalescent to posterior if true", true);
     
+    final public Input<Boolean> allowTransmissionsAfterSamplingInput = new Input<>("allowTransmissionsAfterSampling", "flag to indicate sampling does not affect the probability of onwards transmissions. "
+    		+ "If false, no onwards transmissions are allowed (not clear how this affects the unknown unknowns though).", true);
     
     
     
@@ -70,6 +72,7 @@ public class TransmissionTreeLikelihood3 extends TreeDistribution {
 	private double btr;
 
 	private boolean updateColours = true;
+	private boolean allowTransmissionsAfterSampling;
 	
 	
     @Override
@@ -115,6 +118,8 @@ public class TransmissionTreeLikelihood3 extends TreeDistribution {
 		rho = getRho(phi);
 		atr = transmissionHazard.shapeInput.get().getArrayValue();
 		btr = transmissionHazard.getRate();
+		
+		allowTransmissionsAfterSampling = allowTransmissionsAfterSamplingInput.get();
     }
     
     private void sanityCheck(RealParameter blockFraction, int n, String paramName) {
@@ -194,7 +199,11 @@ System.err.println("#node " + (i+1));
     		double end = intervals.times.get(0);
     		logP1 += logh_s(start, end) + logS_s(start, end);
 			// contribution of causing infections
-    		logP1 +=  logS_tr(start, end); // further contribution below
+    		if (allowTransmissionsAfterSampling) {
+    			logP1 +=  logS_tr(start, d); // further contribution below
+    		} else {
+    			logP1 +=  logS_tr(start, end); // further contribution below
+    		}
     		logP1 -= logGetIndivCondition(p0, start, d);
 System.err.println("#node " + (i+1) + " " + logP1);
 			logP += logP1;
@@ -258,7 +267,7 @@ System.err.println("#node " + (i+1));
     			double end   = nodes[i].getHeight() + branchlength * blockEndFraction.getValue(i);
     			int blocks = blockCount.getValue(i);
     			
-    			double logPBlock = getLogBlockLike(end-start, blocks, end - d);
+    			double logPBlock = getLogBlockLike(end - start, blocks, end - d);
                 
     			System.err.println("#node " + (i+1) + " " + logPBlock);
 //    			System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().getHeight() - start) + " = " + tau + " logPBlock=" + logPBlock);    			
@@ -716,7 +725,9 @@ System.err.println("#node " + (i+1));
 	
 	private double getLogBlockLike(double tblock, int n, double Yr) {
 	    double blockLike = (1-FastMath.pow(rho,n)) * dgamma(tblock, n*atr, btr) / getBlockCondition(p0,rho, atr, btr, Yr);
-	    return FastMath.log(blockLike);		
+	    double logBlockLike = FastMath.log(blockLike);
+	    System.err.println("blockLike(" +tblock+"," + n +"," + Yr+") = " + blockLike);
+	    return logBlockLike;
 	}
 	
 	// gives the density
@@ -724,7 +735,7 @@ System.err.println("#node " + (i+1));
 		if (x < 0) {
 			throw new IllegalArgumentException("x should be non-negative");
 		}
-        return FastMath.pow(x * rate, alpha - 1) * rate /  FastMath.exp(-x * rate) / FastMath.exp(Gamma.logGamma(alpha));
+		return FastMath.pow(x * rate, alpha - 1) * rate * FastMath.exp(-x * rate) / FastMath.exp(Gamma.logGamma(alpha));
 	}
 	
 	//  gives the cumulative distribution function

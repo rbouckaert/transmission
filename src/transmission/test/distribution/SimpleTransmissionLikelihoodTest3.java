@@ -55,9 +55,51 @@ public class SimpleTransmissionLikelihoodTest3 {
         coal.calcColourAtBase();
         double transmissionLikelihood = coal.calcTransmissionLikelihood();
         
-        assertEquals(-24.63453, transmissionLikelihood, 1e-5);
+        assertEquals(-24.63453, transmissionLikelihood, 5e-6);
 	}
 
+	@Test
+	public void testSimpleCase1b() {
+		TreeParser tree = new TreeParser("(Bob:1.7,Eve:2.1);");
+		
+        ConstantPopulation cp = new ConstantPopulation();
+        cp.initByName("popSize", Double.toString(1.0));
+
+        
+        double bs1 = (1.7-0.5)/1.7;
+        double be2 = (2.1-0.65)/2.1;
+        double bs2 = (2.1-1.8)/2.1;
+        RealParameter blockStart = new RealParameter(); blockStart.initByName("dimension", 2, "value",  bs1+" "+bs2);
+        RealParameter blockEnd = new RealParameter(); blockEnd.initByName("dimension", 2, "value",  bs1+" "+be2);
+        IntegerParameter blockcount = new IntegerParameter(); blockcount.initByName("dimension", 2, "value", "0 4");
+        IntegerParameter colour = new IntegerParameter(); colour.initByName("dimension", 3, "value", "0 1 2");
+        
+        HazardFunction samplingHazard = new GammaHazardFunction();
+        samplingHazard.initByName("C", "0.9", "shape", "2.5", "rate", "10.0");
+        samplingHazard.setID("s");
+        
+        HazardFunction transmissionHazard = new GammaHazardFunction();
+        transmissionHazard.initByName("C", "1.5", "shape", "2.0", "rate", "10.0");
+        transmissionHazard.setID("tr");
+        
+        TransmissionTreeLikelihood3 coal = new TransmissionTreeLikelihood3();
+        coal.initByName(
+        		"tree", tree,
+        		"populationModel", cp, 
+        		"blockstart", blockStart, 
+        		"blockend", blockEnd, 
+        		"blockcount", blockcount, 
+        		//"colour", colour,
+        		"endTime", "-0.9",
+        		"samplingHazard", samplingHazard,
+        		"transmissionHazard", transmissionHazard,
+        		"lambda", "1.0");
+        
+        coal.calcColourAtBase();
+        double transmissionLikelihood = coal.calcTransmissionLikelihood();
+        
+        assertEquals(-14.58321, transmissionLikelihood, 1e-5);
+	}
 
 //	@Test
 //	public void testSimpleCase2() {

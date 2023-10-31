@@ -12,7 +12,7 @@ import beast.base.inference.parameter.IntegerParameter;
 import beast.base.inference.parameter.RealParameter;
 import transmission.distribution.GammaHazardFunction;
 import transmission.distribution.HazardFunction;
-import transmission.distribution.TransmissionTreeLikelihood3;
+import transmission.distribution.TransmissionTreeLikelihood;
 
 public class SimpleTransmissionLikelihoodTest3 {
 
@@ -39,7 +39,7 @@ public class SimpleTransmissionLikelihoodTest3 {
         transmissionHazard.initByName("C", "1.5", "shape", "2.0", "rate", "10.0");
         transmissionHazard.setID("tr");
         
-        TransmissionTreeLikelihood3 coal = new TransmissionTreeLikelihood3();
+        TransmissionTreeLikelihood coal = new TransmissionTreeLikelihood();
         coal.initByName(
         		"tree", tree,
         		"populationModel", cp, 
@@ -82,7 +82,7 @@ public class SimpleTransmissionLikelihoodTest3 {
         transmissionHazard.initByName("C", "1.5", "shape", "2.0", "rate", "10.0");
         transmissionHazard.setID("tr");
         
-        TransmissionTreeLikelihood3 coal = new TransmissionTreeLikelihood3();
+        TransmissionTreeLikelihood coal = new TransmissionTreeLikelihood();
         coal.initByName(
         		"tree", tree,
         		"populationModel", cp, 
@@ -167,7 +167,7 @@ public class SimpleTransmissionLikelihoodTest3 {
         transmissionHazard.initByName("C", "1.5", "shape", "2.0", "rate", "10.0");
         transmissionHazard.setID("tr");
         
-        TransmissionTreeLikelihood3 coal = new TransmissionTreeLikelihood3();
+        TransmissionTreeLikelihood coal = new TransmissionTreeLikelihood();
         coal.initByName(
         		"tree", tree,
         		"populationModel", cp, 
@@ -216,7 +216,7 @@ public class SimpleTransmissionLikelihoodTest3 {
         transmissionHazard.initByName("C", "1.5", "shape", "2.0", "rate", "10.0");
         transmissionHazard.setID("tr");
         
-        TransmissionTreeLikelihood3 coal = new TransmissionTreeLikelihood3();
+        TransmissionTreeLikelihood coal = new TransmissionTreeLikelihood();
         coal.initByName(
         		"tree", tree,
         		"populationModel", cp, 

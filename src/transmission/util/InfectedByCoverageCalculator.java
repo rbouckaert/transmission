@@ -253,7 +253,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 		    try {
 			  Graphics g = tempImg.getGraphics();
 			  g.setColor(Color.black);
-			  g.drawLine(77, 429, 474, 49);
+			  g.drawLine(77, 429, 490, 52);
 		      ImageIO.write(tempImg, "png", new FileOutputStream(pngFileInput.get()));
 		    } catch (IOException e) {
 		      e.printStackTrace();

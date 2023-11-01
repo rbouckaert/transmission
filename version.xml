@@ -26,6 +26,7 @@
         <provider classname="transmission2.InfectionInitialiser"/>
         <provider classname="transmission2.InfectorOfLogger"/>
         <provider classname="transmission2.GeometricDistribution"/>
+        <provider classname="transmission2.BlockCountLogger"/>
 	</service>    
 	
 	

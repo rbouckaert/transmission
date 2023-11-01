@@ -51,8 +51,13 @@ public class InfectorOfLogger extends BEASTObject implements Loggable {
     	int infectionCount = 0;
     	for (int i = 0; i < 2 * n - 2; i++) {
     		Node node = tree.getNode(i);
-    		Node parent = node.getParent();
-    		if (colourAtBase[node.getNr()] < n && colourAtBase[parent.getNr()] < n && 
+    		int colour = colourAtBase[node.getNr()];
+    		while (!node.isRoot() && colourAtBase[node.getParent().getNr()] == colour) {
+    			node = node.getParent();
+    		}
+        	Node parent = node.getParent();
+    		if (parent != null &&
+    				colourAtBase[node.getNr()] < n && colourAtBase[parent.getNr()] < n && 
     				colourAtBase[node.getNr()] != colourAtBase[parent.getNr()]) {
     			if (!directOnly || blockCount.getValue(node.getNr()) == 0) {
     				infectedBy[colourAtBase[node.getNr()]] = colourAtBase[parent.getNr()];

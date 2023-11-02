@@ -59,6 +59,7 @@ public class TransmissionTreeSimulator extends Runnable {
 	final public Input<Integer> maxAttemptsInput = new Input<>("maxAttempts",
 			"maximum number of attempts to generate coalescent sub-trees", 1000);
 	final public Input<Integer> taxonCountInput = new Input<>("taxonCount", "generate tree with taxonCount number of taxa. Ignored if negative", -1);
+	final public Input<Integer> maxTaxonCountInput = new Input<>("maxTaxonCount", "reject any tree with more than this number of taxa. Ignored if negative", -1);
 	final public Input<Integer> treeCountInput = new Input<>("treeCount", "generate treeCount number of trees", 1);
 	final public Input<Boolean> directOnlyInput = new Input<>("directOnly", "consider direct infections only, if false block counts are ignored", true);
 
@@ -72,6 +73,10 @@ public class TransmissionTreeSimulator extends Runnable {
 	@Override
 	public void run() throws Exception {
 		int taxonCount = taxonCountInput.get();
+		int maxTaxonCount = maxTaxonCountInput.get();
+		if (maxTaxonCount <= 0) {
+			maxTaxonCount = Integer.MAX_VALUE;
+		}
 		if (seedInput.get() != null) {
 			Randomizer.setSeed(seedInput.get());
 		}
@@ -85,7 +90,7 @@ public class TransmissionTreeSimulator extends Runnable {
 			traceout = new PrintStream(traceOutputInput.get());
 		}
     	traceout.print("Sample\t");
-    	if (false && taxonCount > 0) {
+    	if (true && taxonCount > 0) {
     		for (int i = 0; i < taxonCount; i++) {
     			traceout.print("t" + format(i+1) + "\t");
     		}
@@ -99,7 +104,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		for (int i = 0; i < treeCountInput.get(); i++) {
 			int k;
 			do {
-				runOnce();
+				runOnce(maxTaxonCount);
 				k = root.getAllLeafNodes().size();
 				if (!taxonCounts.containsKey(k)) {
 					taxonCounts.put(k, 0);
@@ -123,7 +128,7 @@ public class TransmissionTreeSimulator extends Runnable {
 			for (Node node : root.getAllLeafNodes()) {
 				h = Math.min(h,  node.getHeight());
 			}
-			System.err.println(toShortNewick(root, colourMap));
+			// System.err.println(toShortNewick(root, colourMap));
 		
 			out.println(newick);
 	    	traceout.print(i +"\t");
@@ -177,7 +182,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		double mean = 0;
 		for (Integer i : keys) {
 			double percentage = 100.0*taxonCounts.get(i)/sum;
-			Log.warning(i + "\t" + (percentage < 10 ? " " : "") + f.format(percentage));
+			Log.warning(i + "\t" + (percentage < 10 ? " " : "") + f.format(((double)percentage)/sum));
 			mean += taxonCounts.get(i) * i;
 		}
 		Log.warning("Mean = " + (mean / sum));
@@ -209,7 +214,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		return length;
 	}
 
-	private void runOnce() throws MathException {	
+	private void runOnce(int maxTaxonCount) throws MathException {	
 		double endTime = endTimeInput.get().getArrayValue();
 		double popSize = popSizeInput.get().getArrayValue();
 
@@ -277,6 +282,10 @@ public class TransmissionTreeSimulator extends Runnable {
 				leafs.add(leaf);
 				current.add(leaf);
 				leaf.setID("t" + format(leafs.size()));
+				if (leafs.size() >= maxTaxonCount) {
+					runOnce(maxTaxonCount);
+					return;
+				}
 			}
 			// create internal (infection) nodes
 			for (int i = 0; i < n; i++) {
@@ -293,7 +302,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		
 			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get());
 			if (fragment == null) {
-				runOnce();
+				runOnce(maxTaxonCount);
 				return;
 			}
 			// connect to node

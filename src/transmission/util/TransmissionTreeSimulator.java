@@ -130,6 +130,13 @@ public class TransmissionTreeSimulator extends Runnable {
 			}
 			// System.err.println(toShortNewick(root, colourMap));
 		
+			if ((i+1) % 10 == 0) {
+				if ((i+1) % 100 == 0) {
+					System.err.print("|");
+				} else {
+					System.err.print(".");
+				}
+			}
 			out.println(newick);
 	    	traceout.print(i +"\t");
 	    	
@@ -159,6 +166,7 @@ public class TransmissionTreeSimulator extends Runnable {
 	    	traceout.println((-h) + "\t" + (root.getHeight() - h) + "\t" + length(root));
 			
 		}
+		System.err.println();
 		reportAttempts(taxonCounts);
 		
 		if (traceOutputInput.get() != null && !traceOutputInput.get().getName().equals("[[none]]")) {
@@ -172,20 +180,38 @@ public class TransmissionTreeSimulator extends Runnable {
 		
 	private void reportAttempts(Map<Integer, Integer> taxonCounts) {
 		DecimalFormat f = new DecimalFormat("##.###");
-		long sum = 0;
-		for (Integer i : taxonCounts.values()) {
-			sum += i;
-		}
 		Integer [] keys = taxonCounts.keySet().toArray(new Integer[] {});
 		Arrays.sort(keys);
 		Log.warning("#taxa\tpercentage of trees");
+		long sum = 0;
 		double mean = 0;
-		for (Integer i : keys) {
-			double percentage = 100.0*taxonCounts.get(i)/sum;
-			Log.warning(i + "\t" + (percentage < 10 ? " " : "") + f.format(((double)percentage)/sum));
-			mean += taxonCounts.get(i) * i;
+		if (maxTaxonCountInput.get() > 0) {
+			for (int i : taxonCounts.keySet()) {
+				if ( i <= maxTaxonCountInput.get()) {
+					sum +=  taxonCounts.get(i);
+				}
+			}
+			for (int i = 0; i <= maxTaxonCountInput.get(); i++) {
+				if (taxonCounts.containsKey(i)) {
+					double percentage = 100.0*taxonCounts.get(i);
+					Log.warning(i + "\t" + (percentage/sum < 10 ? " " : "") + f.format(((double)percentage)/sum));// + "\t" + taxonCounts.get(i));
+					mean += taxonCounts.get(i) * i;
+				} else {
+					Log.warning(i + "\t0.00");
+				}
+			}
+		} else {
+			for (int i : taxonCounts.values()) {
+				sum +=  i;
+			}
+			for (Integer i : keys) {
+				double percentage = 100.0*taxonCounts.get(i);
+				Log.warning(i + "\t" + (percentage < 10 ? " " : "") + f.format(((double)percentage)/sum));
+				mean += taxonCounts.get(i) * i;
+				sum +=  i;
+			}
 		}
-		Log.warning("Mean = " + (mean / sum));
+		Log.warning("Mean = " + (mean / sum) + " based on " +sum + " observations");
 	}
 
 	private void collectInfectedBy(Node node, int[] infectedBy, int taxonCount, int [] colourAtBase, IntegerParameter blockCount) {
@@ -282,7 +308,7 @@ public class TransmissionTreeSimulator extends Runnable {
 				leafs.add(leaf);
 				current.add(leaf);
 				leaf.setID("t" + format(leafs.size()));
-				if (leafs.size() >= maxTaxonCount) {
+				if (leafs.size() > maxTaxonCount) {
 					runOnce(maxTaxonCount);
 					return;
 				}

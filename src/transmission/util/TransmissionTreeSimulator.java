@@ -99,6 +99,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		
     	
     	Map<Integer, Integer> taxonCounts = new HashMap<>();
+    	Map<Integer, Integer> infectionCounts = new HashMap<>();
 		
     	long attempts = 0;
 		for (int i = 0; i < treeCountInput.get(); i++) {
@@ -112,7 +113,7 @@ public class TransmissionTreeSimulator extends Runnable {
 				taxonCounts.put(k, taxonCounts.get(k) + 1);
 				attempts++;
 				if (attempts % 100000 == 0) {
-					reportAttempts(taxonCounts);
+					// reportAttempts(taxonCounts, );
 				}
 			} while (taxonCount > 0 && taxonCount != k);
 			
@@ -122,7 +123,13 @@ public class TransmissionTreeSimulator extends Runnable {
 			}
 			root.setParent(null);
 			String newick = toNewick(root);
-		
+			
+			int infectionCount = infectionCount(root);
+			if (!infectionCounts.containsKey(k)) {
+				infectionCounts.put(k, 0);
+			}
+			infectionCounts.put(k, infectionCounts.get(k) + infectionCount);
+
 			// for debugging
 			double h = root.getHeight();
 			for (Node node : root.getAllLeafNodes()) {
@@ -167,7 +174,7 @@ public class TransmissionTreeSimulator extends Runnable {
 			
 		}
 		System.err.println();
-		reportAttempts(taxonCounts);
+		reportAttempts(taxonCounts, infectionCounts);
 		
 		if (traceOutputInput.get() != null && !traceOutputInput.get().getName().equals("[[none]]")) {
 			traceout.close();
@@ -178,11 +185,11 @@ public class TransmissionTreeSimulator extends Runnable {
 		Log.warning("Done");
 	}
 		
-	private void reportAttempts(Map<Integer, Integer> taxonCounts) {
+	private void reportAttempts(Map<Integer, Integer> taxonCounts, Map<Integer, Integer> infectionCounts) {
 		DecimalFormat f = new DecimalFormat("##.###");
 		Integer [] keys = taxonCounts.keySet().toArray(new Integer[] {});
 		Arrays.sort(keys);
-		Log.warning("#taxa\tpercentage of trees");
+		Log.warning("#taxa\tpercentage of trees\tinfection count per taxon");
 		long sum = 0;
 		double mean = 0;
 		if (maxTaxonCountInput.get() > 0) {
@@ -194,7 +201,8 @@ public class TransmissionTreeSimulator extends Runnable {
 			for (int i = 0; i <= maxTaxonCountInput.get(); i++) {
 				if (taxonCounts.containsKey(i)) {
 					double percentage = 100.0*taxonCounts.get(i);
-					Log.warning(i + "\t" + (percentage/sum < 10 ? " " : "") + f.format(((double)percentage)/sum));// + "\t" + taxonCounts.get(i));
+					Log.warning.print(i + "\t" + (percentage/sum < 10 ? " " : "") + f.format(((double)percentage)/sum));// + "\t" + taxonCounts.get(i));
+					Log.warning.println("\t\t\t" + f.format((double)infectionCounts.get(i) / (i*taxonCounts.get(i))));
 					mean += taxonCounts.get(i) * i;
 				} else {
 					Log.warning(i + "\t0.00");
@@ -206,7 +214,8 @@ public class TransmissionTreeSimulator extends Runnable {
 			}
 			for (Integer i : keys) {
 				double percentage = 100.0*taxonCounts.get(i);
-				Log.warning(i + "\t" + (percentage < 10 ? " " : "") + f.format(((double)percentage)/sum));
+				Log.warning.print(i + "\t" + (percentage < 10 ? " " : "") + f.format(((double)percentage)/sum));
+				Log.warning.println("\t\t\t" + f.format((double)infectionCounts.get(i) / (i*taxonCounts.get(i))));
 				mean += taxonCounts.get(i) * i;
 				sum +=  i;
 			}
@@ -309,6 +318,7 @@ public class TransmissionTreeSimulator extends Runnable {
 				current.add(leaf);
 				leaf.setID("t" + format(leafs.size()));
 				if (leafs.size() > maxTaxonCount) {
+					System.err.print("x");
 					runOnce(maxTaxonCount);
 					return;
 				}
@@ -328,6 +338,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		
 			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get());
 			if (fragment == null) {
+				System.err.print("c");
 				runOnce(maxTaxonCount);
 				return;
 			}
@@ -409,6 +420,40 @@ public class TransmissionTreeSimulator extends Runnable {
 		}
 	}
 	
+	private int infectionCount(Node node) {
+		switch(node.getChildCount()) {
+		case 0: {// leaf
+			Node p = node.getParent();
+			int blockCount = -1;
+			while (p != null && p.getChildCount() == 1) {
+				p = p.getParent();
+				if (colourMap.get(node) != colourMap.get(p)) {
+					blockCount++;
+				}
+			}
+			return blockCount+1;
+		}
+		case 1:
+			return infectionCount(node.getChild(0));
+		case 2:
+			Node left = node.getLeft();
+			int infectionCount = infectionCount(left);
+			Node right = node.getRight();
+			infectionCount += infectionCount(right);
+
+			Node p = node.getParent();
+			int blockCount = -1;
+			while (p != null && p.getChildCount() == 1) {
+				p = p.getParent();
+				if (colourMap.get(node) != colourMap.get(p)) {
+					blockCount++;
+				}
+			}
+			return infectionCount + blockCount + 1;
+		}
+		return 0;		
+	}
+	
 	private String toNewick(Node node) {
 		switch(node.getChildCount()) {
 		case 0: {// leaf
@@ -424,11 +469,6 @@ public class TransmissionTreeSimulator extends Runnable {
 				if (colourMap.get(node) != colourMap.get(p)) {
 					blockCount++;
 				}
-			}
-			
-			if (p != null && Math.abs(length - (p.getHeight() - node.getHeight())) > 1e-8) {
-				int h = 3;
-				h++;
 			}
 			return node.getID() + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",blockstart=" + (blockStart/length) + ",blockend=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length;
 		}
@@ -455,10 +495,6 @@ public class TransmissionTreeSimulator extends Runnable {
 			}
 			if (p == null) {
 				return "(" + leftNewick + "," + rightNewick + ")";
-			}
-			if (Math.abs(length - (p.getHeight() - node.getHeight())) > 1e-8) {
-				int h = 3;
-				h++;
 			}
 			return "(" + leftNewick + "," + rightNewick + ")" + "[&blockcount=" + blockCount + (blockCount >= 0 ? ",blockstart=" + (blockStart/length) + ",blockend=" + (blockEnd/length): "") +",color=" + colourMap.get(node) + "]:" + length; 
 		}

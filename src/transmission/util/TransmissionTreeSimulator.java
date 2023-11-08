@@ -62,6 +62,7 @@ public class TransmissionTreeSimulator extends Runnable {
 	final public Input<Integer> maxTaxonCountInput = new Input<>("maxTaxonCount", "reject any tree with more than this number of taxa. Ignored if negative", -1);
 	final public Input<Integer> treeCountInput = new Input<>("treeCount", "generate treeCount number of trees", 1);
 	final public Input<Boolean> directOnlyInput = new Input<>("directOnly", "consider direct infections only, if false block counts are ignored", true);
+	final public Input<Boolean> quietInput = new Input<>("quiet", "suppress some screen output", false);
 
 	private Node root;
 	private Map<Node, Integer> colourMap;
@@ -189,10 +190,10 @@ public class TransmissionTreeSimulator extends Runnable {
 		DecimalFormat f = new DecimalFormat("##.###");
 		Integer [] keys = taxonCounts.keySet().toArray(new Integer[] {});
 		Arrays.sort(keys);
-		Log.warning("#taxa\tpercentage of trees\tinfection count per taxon");
 		long sum = 0;
 		double mean = 0;
 		if (maxTaxonCountInput.get() > 0) {
+			Log.warning("#taxa\tpercentage of trees");
 			for (int i : taxonCounts.keySet()) {
 				if ( i <= maxTaxonCountInput.get()) {
 					sum +=  taxonCounts.get(i);
@@ -202,13 +203,19 @@ public class TransmissionTreeSimulator extends Runnable {
 				if (taxonCounts.containsKey(i)) {
 					double percentage = 100.0*taxonCounts.get(i);
 					Log.warning.print(i + "\t" + (percentage/sum < 10 ? " " : "") + f.format(((double)percentage)/sum));// + "\t" + taxonCounts.get(i));
-					Log.warning.println("\t\t\t" + f.format((double)infectionCounts.get(i) / (i*taxonCounts.get(i))));
+					Log.warning.print("\t\t\t" + f.format((double)infectionCounts.get(i) / (i*taxonCounts.get(i))));
+					Log.warning.println();
 					mean += taxonCounts.get(i) * i;
 				} else {
-					Log.warning(i + "\t0.00");
+					Log.warning(i + "\t 0.000");
 				}
 			}
+			int i = taxonCountInput.get() ;
+			if (i > 0) {
+				Log.warning.println("mean #transmissions per taxon: " + f.format((double)infectionCounts.get(i) / (i*treeCountInput.get())));
+			}
 		} else {
+			Log.warning("#taxa\tpercentage of trees\tinfection count per taxon");
 			for (int i : taxonCounts.values()) {
 				sum +=  i;
 			}
@@ -220,7 +227,7 @@ public class TransmissionTreeSimulator extends Runnable {
 				sum +=  i;
 			}
 		}
-		Log.warning("Mean = " + (mean / sum) + " based on " +sum + " observations");
+		Log.warning("Mean #taxa = " + (mean / sum) + " based on " +sum + " observations");
 	}
 
 	private void collectInfectedBy(Node node, int[] infectedBy, int taxonCount, int [] colourAtBase, IntegerParameter blockCount) {
@@ -318,7 +325,9 @@ public class TransmissionTreeSimulator extends Runnable {
 				current.add(leaf);
 				leaf.setID("t" + format(leafs.size()));
 				if (leafs.size() > maxTaxonCount) {
-					System.err.print("x");
+					if (!quietInput.get()) {
+						System.err.print("x");
+					}
 					runOnce(maxTaxonCount);
 					return;
 				}
@@ -338,7 +347,9 @@ public class TransmissionTreeSimulator extends Runnable {
 		
 			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get());
 			if (fragment == null) {
-				System.err.print("c");
+				if (!quietInput.get()) {
+					System.err.print("c");
+				}
 				runOnce(maxTaxonCount);
 				return;
 			}

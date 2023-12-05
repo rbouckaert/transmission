@@ -643,7 +643,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	}
 
 	public double logGetIndivCondition(double p0, double t, double d) {
-	    final double TT = 1 - FastMath.exp(-(1-p0) + logS_tr(t, d)  + logS_s(t, d));
+	    final double TT = 1 - FastMath.exp(logS_tr(t, d)*(1-p0) + logS_s(t, d));
 	    final double logIndivCond = FastMath.log(TT);
 //	    System.err.println("logGetIndivCondition(" +p0+"," + (t - d)+") = " + logIndivCond);
 	    return logIndivCond;
@@ -657,7 +657,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	}
 
 	private double getRho(double phi) { 
-	    return (1 - FastMath.exp(-phi+logS_tr(100, 0) + logS_s(100, 0)));
+	    return (1 - FastMath.exp(logS_tr(100, 0)*phi + logS_s(100, 0)));
 	}
 
 	final static double tol2=1e-7;

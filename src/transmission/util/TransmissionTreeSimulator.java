@@ -200,7 +200,7 @@ public class TransmissionTreeSimulator extends Runnable {
 				}
 			}
 			for (int i = 0; i <= maxTaxonCountInput.get(); i++) {
-				if (taxonCounts.containsKey(i)) {
+				if (taxonCounts.containsKey(i) && infectionCounts.containsKey(i)) {
 					double percentage = 100.0*taxonCounts.get(i);
 					Log.warning.print(i + "\t" + (percentage/sum < 10 ? " " : "") + f.format(((double)percentage)/sum));// + "\t" + taxonCounts.get(i));
 					Log.warning.print("\t\t\t" + f.format((double)infectionCounts.get(i) / (i*taxonCounts.get(i))));

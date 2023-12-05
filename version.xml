@@ -34,5 +34,6 @@
     <packageapp description="Convert transmission tree log into bar plot with transmission times" class="transmission.util.TransmissionTreeInfectionTimes" args=""/>
 	<packageapp description="Calculate coverage of who infected who" class="transmission.util.InfectedByCoverageCalculator" args=""/>
     <packageapp description="Simulates transmission tree" class="transmission.util.TransmissionTreeSimulator" args=""/>
+    <packageapp description="Provide statistics of set of transmission trees" class="transmission.util.TransmissionTreeStats" args=""/>
 	
 </package>

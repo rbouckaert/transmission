@@ -48,6 +48,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		+ "If false, no onwards transmissions are allowed (not clear how this affects the unknown unknowns though).", true);
 
     
+    
     private Tree tree;
     private TransmissionSet transmissions;
     private int [] colourAtBase;
@@ -644,6 +645,10 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
 	public double logGetIndivCondition(double p0, double t, double d) {
 	    final double TT = 1 - FastMath.exp(logS_tr(t, d)*(1-p0) + logS_s(t, d));
+	    if (TT == 0) {
+	    	// something is wrong -- make sure the likelihood becomes NEGATIVE_INFINITY by returning POSITIVE_INFINITY
+	    	return Double.POSITIVE_INFINITY;
+	    }
 	    final double logIndivCond = FastMath.log(TT);
 //	    System.err.println("logGetIndivCondition(" +p0+"," + (t - d)+") = " + logIndivCond);
 	    return logIndivCond;

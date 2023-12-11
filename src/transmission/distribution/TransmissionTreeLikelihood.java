@@ -2,6 +2,7 @@ package transmission.distribution;
 
 
 
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -205,7 +206,14 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     			logP1 +=  logS_tr(start, end); // further contribution below
     		}
     		logP1 -= logGetIndivCondition(p0, start, d);
-//System.err.println("#node " + (i+1) + " " + logP1);
+    		if (Double.isInfinite(logP1) && logP1 > 0) {
+    			System.err.println("Numerical instability encountered: ");
+    			System.err.println(start + " " + d + " " + end + " " + p0);
+    			System.err.println(logS_tr(start, d));
+    			System.err.println(logS_tr(start, end));
+    			System.err.println(logGetIndivCondition(p0, start, d));
+    		}
+// System.err.println("#node " + (i+1) + " " + logP1);
 			logP += logP1;
     	}
 
@@ -693,6 +701,10 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
 	public double logGetIndivCondition(double p0, double t, double d) {
 	    final double TT = 1 - FastMath.exp(logS_tr(t, d)*(1-p0) + logS_s(t, d));
+	    if (TT == 0) {
+	    	// something is wrong -- make sure the likelihood becomes NEGATIVE_INFINITY by returning POSITIVE_INFINITY
+	    	return Double.POSITIVE_INFINITY;
+	    }
 	    final double logIndivCond = FastMath.log(TT);
 //	    System.err.println("logGetIndivCondition(" +p0+"," + (t - d)+") = " + logIndivCond);
 	    return logIndivCond;

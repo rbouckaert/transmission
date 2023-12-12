@@ -36,7 +36,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     final public Input<PopulationFunction> popSizeInput = new Input<>("populationModel", "A population size model", Validate.REQUIRED);
 
     final public Input<RealParameter> endTimeInput = new Input<>("endTime", "time at which the study finished", Validate.REQUIRED);
-    final public Input<RealParameter> lambdaTrInput = new Input<>("lambda", "lambda parameter of Poisson process", Validate.REQUIRED);
+    //final public Input<RealParameter> lambdaTrInput = new Input<>("lambda", "lambda parameter of Poisson process", Validate.REQUIRED);
     
     final public Input<GammaHazardFunction> samplingHazardInput = new Input<>("samplingHazard", "determines the hazard of being sampled", Validate.REQUIRED);
     final public Input<GammaHazardFunction> transmissionHazardInput = new Input<>("transmissionHazard", "determines the hazard of transmitting an infection", Validate.REQUIRED);
@@ -60,7 +60,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     // hazard functions for sampling and transmission respectively
 
 	private RealParameter endTime; // end time of study
-    private RealParameter lambda_tr; // mean rate for Poisson process 
+    //private RealParameter lambda_tr; // mean rate for Poisson process 
 	private GammaHazardFunction samplingHazard;
 	private GammaHazardFunction transmissionHazard;
 
@@ -108,7 +108,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	validator = new Validator(tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);    	
 
     	endTime = endTimeInput.get();
-		lambda_tr = lambdaTrInput.get();
+		// lambda_tr = lambdaTrInput.get();
 		samplingHazard = samplingHazardInput.get();
 		transmissionHazard = transmissionHazardInput.get();
 

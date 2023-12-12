@@ -2,13 +2,10 @@ package transmission.util;
 
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 
@@ -191,7 +188,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 		}
 
 		if (pngFileInput.get() != null && !pngFileInput.get().getName().equals("[[none]]")) {
-			showCoveragePlot(truebins, totals);
+			showCoveragePlot(truebins, totals, pngFileInput.get(), includeUnsampledInput.get());
 		}
 		
 		Log.warning("\nDone");
@@ -199,7 +196,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 	}
 	
 	
-    private void showCoveragePlot(int [] truebins, int [] totals) {
+    static public void showCoveragePlot(int [] truebins, int [] totals, File pngfile, boolean includeUnsampleds) {
 		// this initialised the javafx toolkit
 		new JFXPanel();
 		Platform.runLater(() -> {
@@ -218,7 +215,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 	
 	        BarChart barChart = new BarChart(xAxis, yAxis);
 	        barChart.setTitle("Infectors true vs inferred " + 
-	        		(includeUnsampledInput.get()? "with" : "without") + " unsampled hosts");
+	        		(includeUnsampleds? "with" : "without") + " unsampled hosts");
 	
 	        XYChart.Series data = new XYChart.Series<String, Number>();
 	
@@ -254,7 +251,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 			  Graphics g = tempImg.getGraphics();
 			  g.setColor(Color.black);
 			  g.drawLine(77, 429, 490, 52);
-		      ImageIO.write(tempImg, "png", new FileOutputStream(pngFileInput.get()));
+		      ImageIO.write(tempImg, "png", new FileOutputStream(pngfile));
 		    } catch (IOException e) {
 		      e.printStackTrace();
 		    }			

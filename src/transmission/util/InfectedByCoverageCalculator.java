@@ -49,6 +49,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 			+ "If not specified, assume all entries must be used");	
 	final public Input<Boolean> includeUnsampledInput = new Input<>("includeUnsampled", "include unsampled infectors in true-vs-inferred plot", true);	
 	final public Input<OutFile> pngFileInput = new Input<>("png", "name of file to write bar-chart plot", new OutFile("[[none]]"));	
+	final public Input<Integer> binCountInput = new Input<>("bins", "number of bins=bars to use for the chart", 10);	
 
 	
 	@Override
@@ -83,7 +84,8 @@ public class InfectedByCoverageCalculator extends Runnable {
 		out.println();
 		
 				
-		int [] truebins = new int [10];
+		int binCount = binCountInput.get();
+		int [] truebins = new int [binCount];
 		int [] totals = new int [truebins.length];
 		boolean includeUnsampled = includeUnsampledInput.get();
 		

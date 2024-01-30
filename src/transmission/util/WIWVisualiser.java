@@ -156,15 +156,28 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 		// add nodes
 		DecimalFormat f = new DecimalFormat("#.##");
 		Node [] nodes = new Node[n];
+
+		boolean [] nodesInUse = new boolean[n];
+		double threshold = thresholdInput.get();
 		for (int i = 0; i < n; i++) {
-			Node node = Node.builder().label(nodeLabels[i] + " (" + f.format(1.0-transitions[i][n]-transitions[i][i]) + ")").build();
-//			System.err.println(transitions[i][i]);
-			dotty = dotty.addNode(node);
-			nodes[i] = node;
+			for (int j = 0; j < n; j++) {
+				if (i!=j && transitions[i][j] >= threshold) {
+					nodesInUse[i] = true;
+					nodesInUse[j] = true;
+				}
+			}
+		}
+		
+		for (int i = 0; i < n; i++) {
+			if (nodesInUse[i]) {
+				Node node = Node.builder().label(nodeLabels[i] + " (" + f.format(1.0-transitions[i][n]-transitions[i][i]) + ")").build();
+	//			System.err.println(transitions[i][i]);
+				dotty = dotty.addNode(node);
+				nodes[i] = node;
+			}
 		}
 		
 		// add edges
-		double threshold = thresholdInput.get();
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < n; j++) {
 				if (i!=j && transitions[i][j] >= threshold) {

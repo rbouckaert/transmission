@@ -36,5 +36,6 @@
 	<packageapp description="Create coverage plot from InfectedByCoverageCalculator screen output" class="transmission.util.CoveragePlot" args=""/>
     <packageapp description="Simulates transmission tree" class="transmission.util.TransmissionTreeSimulator" args=""/>
     <packageapp description="Provide statistics of set of transmission trees" class="transmission.util.TransmissionTreeStats" args=""/>
+    <packageapp description="Create SVG files to visualise who infected who" class="transmission.util.WIWVisualiser" args=""/>
 	
 </package>

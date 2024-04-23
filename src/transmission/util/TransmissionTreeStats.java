@@ -45,6 +45,9 @@ public class TransmissionTreeStats extends Runnable {
 		for (int i = 0; i < leafNodeCount; i++) {
 			outTimeTillTransmission.print(tree.getNode(i).getID() + "\t");
 		}
+		for (int i = 0; i < leafNodeCount; i++) {
+			outTimeTillTransmission.print("2nd" + tree.getNode(i).getID() + "\t");
+		}
 		outTimeTillTransmission.print("\n");
 		PrintStream outTimeTillSampling = new PrintStream(outputDirInput.get()+ "/timeTillSampling.dat");
 		outTimeTillSampling.print("Sample\t");
@@ -61,6 +64,7 @@ public class TransmissionTreeStats extends Runnable {
 		Double[] blockEnd = new Double[leafNodeCount * 2 - 1];
 		double[] infectionTimeHost = new double[leafNodeCount * 2 - 1];
 		double[] firstInfecteeTimeByHost = new double[leafNodeCount * 2 - 1];
+		double[] secondInfecteeTimeByHost = new double[leafNodeCount * 2 - 1];
 		
 		double leafBranchLength = 0;
 		double internalBranchLength = 0;
@@ -138,14 +142,21 @@ public class TransmissionTreeStats extends Runnable {
 			
 			// determine firstInfecteeTimeByHost
 			Arrays.fill(firstInfecteeTimeByHost, -1.0);
+			Arrays.fill(secondInfecteeTimeByHost, -1.0);
 			for (int i = 0; i < 2 * leafNodeCount - 2; i++) {
 				Node node = nodes[i];
 				int host = colourAtBase[node.getParent().getNr()];
 				if (blockCount.getValue(i) >= 0 && host < leafNodeCount) {
 					double infectionTime = node.getHeight() + node.getLength() * blockEnd[i];
-					if (infectionTime > firstInfecteeTimeByHost[host]) {
+					if (firstInfecteeTimeByHost[host] < 0) {
+						firstInfecteeTimeByHost[host] = infectionTime; 
+					} else if (infectionTime > firstInfecteeTimeByHost[host]) {
+						secondInfecteeTimeByHost[host] = firstInfecteeTimeByHost[host]; 	
 						firstInfecteeTimeByHost[host] = infectionTime;
+					} else if (infectionTime > secondInfecteeTimeByHost[host]) {
+						secondInfecteeTimeByHost[host] = infectionTime;
 					}
+					
 				}
 			}
 			
@@ -153,6 +164,13 @@ public class TransmissionTreeStats extends Runnable {
 			for (int i = 0; i < leafNodeCount; i++) {
 				if (firstInfecteeTimeByHost[i] > 0) {
 					outTimeTillTransmission.print((infectionTimeHost[i] - firstInfecteeTimeByHost[i]) + "\t");
+				} else {
+					outTimeTillTransmission.print("-1\t");
+				}
+			}
+			for (int i = 0; i < leafNodeCount; i++) {
+				if (secondInfecteeTimeByHost[i] > 0) {
+					outTimeTillTransmission.print((infectionTimeHost[i] - secondInfecteeTimeByHost[i]) + "\t");
 				} else {
 					outTimeTillTransmission.print("-1\t");
 				}
@@ -169,6 +187,9 @@ public class TransmissionTreeStats extends Runnable {
 			maxBlockCount += maxBlockCountInTree;
 
 			sampleCount++;
+			if (sampleCount % 1000 == 0) {
+				System.err.print(".");
+			}
 		}
 		Log.info("average leaf Branch Length = " + f.format(leafBranchLength / (sampleCount * leafNodeCount)));
 		Log.info("average internal Branch Length = " + f.format(internalBranchLength / (sampleCount * (leafNodeCount-2))));

@@ -13,6 +13,7 @@ import org.apache.commons.math.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 
 import beast.base.core.Description;
+import beast.base.core.Function;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
 import beast.base.core.Log;
@@ -35,6 +36,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 //    final public Input<IntegerParameter> colourInput = new Input<>("colour", "colour of the base of the branch", Validate.REQUIRED);
     final public Input<PopulationFunction> popSizeInput = new Input<>("populationModel", "A population size model", Validate.REQUIRED);
 
+    final public Input<Function> deltaStartTimeInput = new Input<>("deltaStartTime", "time at which the study start till root of tree", new Constant("0.0"));
     final public Input<RealParameter> endTimeInput = new Input<>("endTime", "time at which the study finished", Validate.REQUIRED);
     //final public Input<RealParameter> lambdaTrInput = new Input<>("lambda", "lambda parameter of Poisson process", Validate.REQUIRED);
     
@@ -56,6 +58,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     private int [] colourAtBase;
     private PopulationFunction popSizeFunction;
     private Validator validator;
+    private Function deltaStartTime;
     
     // hazard functions for sampling and transmission respectively
 
@@ -82,7 +85,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	if (tree == null) {
     		tree = treeIntervalsInput.get().treeInput.get();
     	}
-
+    	
     	int n = tree.getNodeCount();
     	blockStartFraction = blockStartFractionInput.get();
     	blockEndFraction = blockEndFractionInput.get();
@@ -107,6 +110,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	
     	validator = new Validator(tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);    	
 
+    	deltaStartTime = deltaStartTimeInput.get();
     	endTime = endTimeInput.get();
 		// lambda_tr = lambdaTrInput.get();
 		samplingHazard = samplingHazardInput.get();
@@ -554,6 +558,10 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 				((SegmentIntervalList) segments.get(colour)).birthTime = node.getHeight(); 
 			}
 		}
+		
+		// set origin in segment at root
+		int colour = colourAtBase[tree.getNodeCount()-1];
+		((SegmentIntervalList) segments.get(colour)).birthTime = tree.getRoot().getHeight() + deltaStartTime.getArrayValue(); 
 		
 		for (IntervalList intervals : segments) {
 			if (intervals != null) {

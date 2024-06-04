@@ -72,8 +72,8 @@ public class GammaHazardFunctionInputEditor extends BEASTObjectInputEditor {
         // addValidationLabel();
         getChildren().add(pane);
 
-        registerAsListener(pane);   
         _this = this;
+        registerAsListener(pane);   
 	}
 	
 	

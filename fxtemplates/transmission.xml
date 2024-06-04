@@ -1,0 +1,129 @@
+<beast version='2.0'
+       namespace='beastfx.app.beauti:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.branchratemodel:beast.base.evolution.speciation:beast.base.evolution.tree.coalescent:beast.base.util:beast.base.math:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood:beast.evolution:beast.base.inference.distribution'>
+
+    <!-- tree priors -->
+    <mergewith point='treePriorTemplates'>
+        <!-- TransmissionTreeLikelihood -->
+        <subtemplate id='Transmission' class='transmission.distribution.TransmissionTreeLikelihood' mainid='transmissionLikelihood.t:$(n)' 
+hmc="TransMissionUniformOperator/index/=Operators/BactrianNodeOperator/,
+TransMissionSubtreeSlide/index/=Operators/SubtreeSlide/,
+TransMissionNarrow/index/=Operators/Exchange/,
+TransMissionWide/index/=Operators/Exchange/,
+TransMissionWilsonBalding/index/=Operators/WilsonBalding/,
+TransMissionBICEPSEpochTop/index/=Operators/EpochFlexer/,
+TransMissionBICEPSEpochAll/index/=Operators/EpochFlexer/,
+TransMissionBICEPSTreeFlex/index/=Operators/TreeStretcher/,
+TransMissionTreeRootScaler/index/=Operators/BactrianTreeScaler/
+"
+suppressInputs="transmission.distribution.TransmissionTreeLikelihood.treeIntervals,
+transmission.distribution.TransmissionTreeLikelihood.useTipDates,
+transmission.distribution.TransmissionTreeLikelihood.colourOnly,
+transmission.distribution.TransmissionTreeLikelihood.tree,
+transmission.distribution.GammaHazardFunction.scale
+"
+>
+            <![CDATA[
+                
+                <distribution id="transmissionLikelihood.t:$(n)" spec="transmission.distribution.TransmissionTreeLikelihood" colourOnly="false">
+                	<tree idref="Tree.t:$(n)"/>
+                	<blockstart id="blockstart.t:$(n)" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
+                	<blockend   id="blockend.t:$(n)" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
+                	<blockcount id="blockcount.t:$(n)" spec="parameter.IntegerParameter" value="0" lower="-1" upper="100000"/>
+		            <populationModel id="ConstantTransmissionPopulation.t:$(n)" spec="ConstantPopulation">
+        		        <popSize id="transmissionPopSize.t:$(n)" spec="parameter.RealParameter" lower="0.0" upper="Infinity">0.5</popSize>
+		            </populationModel>
+		            <endTime  id="endTime.t:$(n)" spec="parameter.RealParameter" value="-1"/>
+                    <samplingHazard id="samplingHazard.t:$(n)" spec="transmission.distribution.GammaHazardFunction" shape="10.0" rate="6.5" C="0.75"/>
+                    <transmissionHazard id="transmissionHazard.t:$(n)" spec="transmission.distribution.GammaHazardFunction" shape="10.0" rate="8.5" C="2.0"/>
+                </distribution>
+
+                <!-- transmission likelihood priors -->
+	            <prior id="BlockCountPrior.t:$(n)" x="@blockcount.t:$(n)">
+    	            <distr spec="beast.base.inference.distribution.Uniform" lower="-1" upper="4"/>
+        	    </prior>
+            	<prior id="BlockStartPrior.t:$(n)" x="@blockstart.t:$(n)">
+                	<distr spec="beast.base.inference.distribution.Uniform" lower="0" upper="1"/>
+	            </prior>
+    	        <prior id="BlockEndPrior.t:$(n)" x="@blockend.t:$(n)">
+        	        <distr spec="beast.base.inference.distribution.Uniform" lower="0" upper="1"/>
+            	</prior>
+    	        <prior id="TransmissionPopSizePrior.t:$(n)" x="@transmissionPopSize.t:$(n)">
+        	        <distr spec="beast.base.inference.distribution.Uniform" lower="0" upper="Infinity"/>
+            	</prior>
+
+        <!-- estimated transmission parameters -->
+        <operator id="transmissionInfectionMover.t:$(n)" spec="transmission.operator.InfectionMover" 
+        	blockstart="@blockstart.t:$(n)" 
+        	blockend="@blockend.t:$(n)" 
+        	blockcount="@blockcount.t:$(n)" 
+        	likelihood="@transmissionLikelihood.t:$(n)"
+        	weight="50.0"/>
+        	
+        <operator id="transmissionBlockOperator.t:$(n)" spec="transmission.operator.BlockOperator" 
+                blockstart="@blockstart.t:$(n)" 
+                blockend="@blockend.t:$(n)" 
+                blockcount="@blockcount.t:$(n)" 
+                tree="@Tree.t:$(n)"
+                weight="50.0"/>
+        <operator id="transmissionPopSizeScaler.t:$(n)" spec="kernel.BactrianScaleOperator" parameter="@transmissionPopSize.t:$(n)" scaleFactor="0.1" upper="10.0" weight="5.0"/>
+]]>
+			<plate fragment="TreeOperators" var="m" range="Transmission"/>
+
+            <connect srcID='BlockCountPrior.t:$(n)' targetID='prior' inputName='distribution'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'>
+                     Transmission block count prior on tree t:$(n)
+            </connect>
+            <connect srcID='BlockStartPrior.t:$(n)' targetID='prior' inputName='distribution'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'>
+                     Transmission block start prior on tree t:$(n)
+            </connect>
+            <connect srcID='BlockEndPrior.t:$(n)' targetID='prior' inputName='distribution'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'>
+                     Transmission block end prior on tree t:$(n)
+            </connect>
+            <connect srcID='TransmissionPopSizePrior.t:$(n)' targetID='prior' inputName='distribution'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'>
+                     Transmission population size prior on tree t:$(n)
+            </connect>
+
+
+            <connect srcID='blockstart.t:$(n)' targetID='state' inputName='stateNode'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(blockstart.t:$(n)) and blockstart.t:$(n)/estimate=true'/>
+            <connect srcID='blockend.t:$(n)' targetID='state' inputName='stateNode'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(blockend.t:$(n)) and blockend.t:$(n)/estimate=true'/>
+            <connect srcID='blockcount.t:$(n)' targetID='state' inputName='stateNode'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(blockcount.t:$(n)) and blockcount.t:$(n)/estimate=true'/>
+            <connect srcID='transmissionPopSize.t:$(n)' targetID='state' inputName='stateNode'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(transmissionPopSize.t:$(n)) and transmissionPopSize.t:$(n)/estimate=true'/>
+
+            <connect srcID='transmissionInfectionMover.t:$(n)' targetID='mcmc' inputName='operator'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'>
+                	Moves infection of transmission prior of tree t:$(n)
+            </connect>
+            <connect srcID='transmissionBlockOperator.t:$(n)' targetID='mcmc' inputName='operator'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'>
+                	Updates block sizes of transmission prior of tree t:$(n)
+            </connect>
+            <connect srcID='transmissionPopSizeScaler.t:$(n)' targetID='mcmc' inputName='operator'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(transmissionPopSize.t:$(n)) and transmissionPopSize.t:$(n)/estimate=true'>
+                	Scale population size of transmission prior of tree t:$(n)
+            </connect>
+
+            <connect srcID='transmissionLikelihood.t:$(n)' targetID='tracelog' inputName='log'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'/>
+            <connect srcID='transmissionPopSize.t:$(n)' targetID='tracelog' inputName='log'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and transmissionPopSize.t:$(n)/estimate=true'/>
+
+            <connect srcID='blockstart.t:$(n)' targetID='TreeWithMetaDataLogger.t:$(n)' inputName='metadata' 
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'/>
+            <connect srcID='blockend.t:$(n)' targetID='TreeWithMetaDataLogger.t:$(n)' inputName='metadata' 
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'/>
+            <connect srcID='blockcount.t:$(n)' targetID='TreeWithMetaDataLogger.t:$(n)' inputName='metadata' 
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'/>
+
+
+        </subtemplate>
+    </mergewith>
+</beast>
+
+

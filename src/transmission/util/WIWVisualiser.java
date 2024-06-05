@@ -36,6 +36,7 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 	final public Input<String> prefixInput = new Input<>("prefix", "prefix of infectorOf entry, e.g., infectorOf", "infectorOf");
 	final public Input<Double> thresholdInput = new Input<>("threshold", "probability threshold below which edges will be ignored.", 0.1);
 	final public Input<String> partitionInput = new Input<>("partition", "name of the partition appended to `blockcount, blockend and blockstart`");
+	final public Input<Boolean> suppressSingletonInput = new Input<>("suppressSingleton", "do not show taxa that are not connected to any otehr taxa", true);
 
 	
 	@Override
@@ -169,7 +170,7 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 		}
 		
 		for (int i = 0; i < n; i++) {
-			if (nodesInUse[i]) {
+			if (nodesInUse[i] || !suppressSingletonInput.get()) {
 				Node node = Node.builder().label(nodeLabels[i] + " (" + f.format(1.0-transitions[i][n]-transitions[i][i]) + ")").build();
 	//			System.err.println(transitions[i][i]);
 				dotty = dotty.addNode(node);
@@ -186,6 +187,8 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 			}
 		}
 		
+		
+		System.out.println(dotty.build().toString());
 		// create SVG
 		String svg = dotty.build().toSvgStr();
 

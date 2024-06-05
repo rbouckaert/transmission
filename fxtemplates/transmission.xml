@@ -19,6 +19,10 @@ suppressInputs="transmission.distribution.TransmissionTreeLikelihood.treeInterva
 transmission.distribution.TransmissionTreeLikelihood.useTipDates,
 transmission.distribution.TransmissionTreeLikelihood.colourOnly,
 transmission.distribution.TransmissionTreeLikelihood.tree,
+transmission.distribution.TransmissionTreeLikelihood.blockstart,
+transmission.distribution.TransmissionTreeLikelihood.blockend,
+transmission.distribution.TransmissionTreeLikelihood.blockcount,
+transmission.distribution.TransmissionTreeLikelihood.populationModel,
 transmission.distribution.GammaHazardFunction.scale
 "
 >
@@ -67,7 +71,7 @@ transmission.distribution.GammaHazardFunction.scale
                 weight="50.0"/>
         <operator id="transmissionPopSizeScaler.t:$(n)" spec="kernel.BactrianScaleOperator" parameter="@transmissionPopSize.t:$(n)" scaleFactor="0.1" upper="10.0" weight="5.0"/>
 ]]>
-			<plate fragment="TreeOperators" var="m" range="Transmission"/>
+			<plate fragment="TreeOperators" var="m" range="transmissionLikelihood"/>
 
             <connect srcID='BlockCountPrior.t:$(n)' targetID='prior' inputName='distribution'
                      if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'>

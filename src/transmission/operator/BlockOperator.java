@@ -174,7 +174,7 @@ public class BlockOperator extends Operator {
 		eligbleInfectionCount = 0;
 		for (int i = 0; i < blockCount.getDimension(); i++) {
 			if (blockCount.getValue(i) == 0) {
-				if (!(colourAtBase[i] < n && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
+				if (!(colourAtBase[i] < n && !tree.getNode(i).isRoot() && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
 					eligbleInfectionCount += 1;
 				}
 			} else {
@@ -189,7 +189,7 @@ public class BlockOperator extends Operator {
 		int k = Randomizer.nextInt(eligbleInfectionCount);
 		for (int i = 0; i < blockCount.getDimension(); i++) {
 			if (blockCount.getValue(i) == 0) {
-				if (!(colourAtBase[i] < n && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
+				if (!(colourAtBase[i] < n && !tree.getNode(i).isRoot() && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
 					k--;
 				}
 			} else {

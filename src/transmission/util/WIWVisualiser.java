@@ -11,6 +11,7 @@ import org.graphper.api.Graphviz;
 import org.graphper.api.Graphviz.GraphvizBuilder;
 import org.graphper.api.Line;
 import org.graphper.api.Node;
+import org.graphper.api.attributes.Color;
 
 import beastfx.app.tools.Application;
 import beastfx.app.util.LogFile;
@@ -36,7 +37,9 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 	final public Input<String> prefixInput = new Input<>("prefix", "prefix of infectorOf entry, e.g., infectorOf", "infectorOf");
 	final public Input<Double> thresholdInput = new Input<>("threshold", "probability threshold below which edges will be ignored.", 0.1);
 	final public Input<String> partitionInput = new Input<>("partition", "name of the partition appended to `blockcount, blockend and blockstart`");
-	final public Input<Boolean> suppressSingletonInput = new Input<>("suppressSingleton", "do not show taxa that are not connected to any otehr taxa", true);
+	final public Input<Boolean> suppressSingletonInput = new Input<>("suppressSingleton", "do not show taxa that are not connected to any other taxa", true);
+	final public Input<Boolean> colourByAgeInput = new Input<>("colourByAge", "colour nodes in output by node age. All blacks if false", true);
+	final public Input<Boolean> widthByPosteriorInput = new Input<>("widthByPosterior", "draw line between nodes with widths proportional to posterior support", true);
 
 	
 	@Override
@@ -46,14 +49,25 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 	@Override
 	public void run() throws Exception {
 		String [] nodeLabels;
+		double [] age = null;
 		int n;
-		
+		double upper = 0;
+
 		double [][] transitions;
 		if (treeFile.get() != null && !treeFile.get().getName().equals("[[none]]")) {
 	        MemoryFriendlyTreeSet trees = new TreeAnnotator().new MemoryFriendlyTreeSet(treeFile.get().getAbsolutePath(), burnInPercentageInput.get());
 	        trees.reset();
 	    	Tree tree = trees.next();
 	    	n = tree.getLeafNodeCount();
+	    	
+			if (colourByAgeInput.get()) {
+				age = new double[n];
+				for (int i = 0; i < n; i++) {
+					age[i] = tree.getNode(i).getHeight();
+					upper = Math.max(upper, age[i]);
+				}
+			}
+
 			nodeLabels = new String[n];
 			for (int i = 0; i < n; i++) {
 				nodeLabels[i] = tree.getNode(i).getID();
@@ -168,21 +182,55 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 				}
 			}
 		}
+
 		
+		
+		
+		int suppressedCount = 0;
 		for (int i = 0; i < n; i++) {
 			if (nodesInUse[i] || !suppressSingletonInput.get()) {
-				Node node = Node.builder().label(nodeLabels[i] + " (" + f.format(1.0-transitions[i][n]-transitions[i][i]) + ")").build();
+				String colourString = "#000";
+				Node node = null;
+				if (age != null) {
+					int c = java.awt.Color.HSBtoRGB((float)(age[i]/upper), 0.9f, 0.9f);
+					colourString = "#" + Integer.toHexString(c).substring(2);
+					Color colour = Color.ofRGB(colourString);
+					c = java.awt.Color.HSBtoRGB((float)(age[i]/upper), 0.5f, 0.9f);
+					colourString = "#" + Integer.toHexString(c).substring(2);
+					Color fillcolour = Color.ofRGB(colourString);
+					node = Node.builder()
+							.label(nodeLabels[i] + " (" + f.format(1.0-transitions[i][n]-transitions[i][i]) + ")")
+							.color(colour)
+							.fillColor(fillcolour)
+							.build();
+				} else {
+					node = Node.builder()
+						.label(nodeLabels[i] + " (" + f.format(1.0-transitions[i][n]-transitions[i][i]) + ")")
+						.build();
+				}
 	//			System.err.println(transitions[i][i]);
 				dotty = dotty.addNode(node);
 				nodes[i] = node;
+			} else {
+				suppressedCount++;
 			}
 		}
 		
+		if (suppressSingletonInput.get()) {
+			Log.warning(suppressedCount + " nodes not shown since they are singletons");
+		}
+		
 		// add edges
+		double pen = 1.0;
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < n; j++) {
 				if (i!=j && transitions[i][j] >= threshold) {
-					dotty = dotty.addLine(Line.builder(nodes[j], nodes[i]).label(f.format(transitions[i][j])).build());
+					if (widthByPosteriorInput.get()) {
+						pen = transitions[i][j]*15;
+					}
+					dotty = dotty.addLine(Line.builder(nodes[j], nodes[i]).penWidth(pen)
+							.label(f.format(transitions[i][j]))
+							.build());
 				}
 			}
 		}

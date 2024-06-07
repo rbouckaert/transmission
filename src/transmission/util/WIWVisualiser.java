@@ -1,11 +1,15 @@
 package transmission.util;
 
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import org.graphper.api.Graphviz;
 import org.graphper.api.Graphviz.GraphvizBuilder;
@@ -17,6 +21,7 @@ import beastfx.app.tools.Application;
 import beastfx.app.util.LogFile;
 import beastfx.app.util.OutFile;
 import beastfx.app.util.TreeFile;
+import beastfx.app.util.Utils;
 import transmission.distribution.ColourProvider;
 import beast.base.core.Description;
 import beast.base.core.Input;
@@ -40,6 +45,11 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 	final public Input<Boolean> suppressSingletonInput = new Input<>("suppressSingleton", "do not show taxa that are not connected to any other taxa", true);
 	final public Input<Boolean> colourByAgeInput = new Input<>("colourByAge", "colour nodes in output by node age. All blacks if false", true);
 	final public Input<Boolean> widthByPosteriorInput = new Input<>("widthByPosterior", "draw line between nodes with widths proportional to posterior support", true);
+
+	final public Input<Float> saturationInput = new Input<>("saturation", "saturation used when colouring nodes.", 0.7f);
+	final public Input<Float> brightnessInput = new Input<>("brightness", "brightness used when colouring nodes.", 0.7f);
+
+	final static String DIR_SEPARATOR = (Utils.isWindows() ? "\\\\" : "/");
 
 	
 	@Override
@@ -192,7 +202,7 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 				String colourString = "#000";
 				Node node = null;
 				if (age != null) {
-					int c = java.awt.Color.HSBtoRGB((float)(age[i]/upper), 0.9f, 0.9f);
+					int c = java.awt.Color.HSBtoRGB((float)(age[i]/upper), saturationInput.get(), brightnessInput.get());
 					colourString = "#" + Integer.toHexString(c).substring(2);
 					Color colour = Color.ofRGB(colourString);
 					c = java.awt.Color.HSBtoRGB((float)(age[i]/upper), 0.5f, 0.9f);
@@ -227,16 +237,30 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 				if (i!=j && transitions[i][j] >= threshold) {
 					if (widthByPosteriorInput.get()) {
 						pen = transitions[i][j]*15;
+						dotty = dotty.addLine(Line.builder(nodes[j], nodes[i]).penWidth(pen)
+								.label(f.format(transitions[i][j]))
+								.build());
+					} else if (colourByAgeInput.get()) {
+						int c = java.awt.Color.HSBtoRGB((float)(transitions[i][j] * 0.5 + 0.5), saturationInput.get(), brightnessInput.get());
+						String colourString = "#" + Integer.toHexString(c).substring(2);
+						Color fillcolour = Color.ofRGB(colourString);
+						dotty = dotty.addLine(Line.builder(nodes[j], nodes[i])
+								.penWidth(2.0)
+								.color(fillcolour)
+								.fontColor(fillcolour)
+								.label(f.format(transitions[i][j]))
+								.build());
+					} else {
+						dotty = dotty.addLine(Line.builder(nodes[j], nodes[i])
+								.label(f.format(transitions[i][j]))
+								.build());
 					}
-					dotty = dotty.addLine(Line.builder(nodes[j], nodes[i]).penWidth(pen)
-							.label(f.format(transitions[i][j]))
-							.build());
 				}
 			}
 		}
 		
 		
-		System.out.println(dotty.build().toString());
+		// System.out.println(dotty.build().toString());
 		// create SVG
 		String svg = dotty.build().toSvgStr();
 
@@ -250,6 +274,28 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		if (colourByAgeInput.get()) {
+			System.err.println("Writing legend " + outputInput.get().getParent() + DIR_SEPARATOR + "legend.png ");
+			BufferedImage image = new BufferedImage(200, 200, BufferedImage.TYPE_INT_RGB);
+	        Graphics g = image.getGraphics();
+	        g.setColor(java.awt.Color.white);
+	        g.fillRect(0, 0, 200, 200);
+	        
+	        for (int i = 0; i < 200; i++) {
+	        	double x = (200 - i) / 200.0;
+				g.setColor(java.awt.Color.getHSBColor((float) x, saturationInput.get(), brightnessInput.get()));
+	        	g.drawLine(25, i, 75, i);
+	        }
+			g.setColor(java.awt.Color.black);
+	        for (int i = 0; i < 10; i++) {
+	        	g.drawString(f.format(upper * (10 - i)/ 10), 100, 200*i/10);
+	        }
+			ImageIO.write(image, "png", new File((outputInput.get().getParent() != null ? outputInput.get().getParent() + DIR_SEPARATOR : "") + "legend.png"));
+			
+		}
+		
+		
 		System.err.println("Done");	
 	}
 	

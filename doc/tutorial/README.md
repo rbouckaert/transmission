@@ -9,6 +9,21 @@ beastversion: 2.7.5
 
 # Background
 
+In a disease outbreak, knowledge about who-infected-who can be crucial in managing the trajectory of the epidemic.
+Since it is routine these days to sequence pathogens in serious outbreaks, it becomes appealing to use these sequences in making inferences about who-infected-who.
+The transmission tree model {% cite Colijn et al. 2024 %} allows simultaneous inference of the phylogeny of the pathogen and transmission amongst hosts, including unsampled hosts.
+This has a number of benefits over existing methods for inference who-infected-who:
+
+* It captures phylogenetic uncertainty impacting tranmission chains more accurately than when a phylogeny is inferred first, and then transmissions are inferred on a summary tree.
+* It provides a tree generating process that we can use as tree prior, thus more accurately describing our prior knowledge about how the phylogeny evolved than if we are using standard coalescent or birth-death based tree priors.
+* It can deal with hosts that were not sampled but are part of the transmission chain.
+
+There are some limitations that need to be taken in account:
+
+* Good knowledge about the transmission process is required in order to be able to specify the parameters of the transmission hazard -- one of the input for the transmission tree likelihood.
+* Likewise, good knowledge about the sampling process is required: what time does it take between a host getting infected and getting sampled, and what is the probability of being sampled. This information is required to specify the sampling hazard parameters.
+* If the goal of the analysis is to infer who-infected-who from the data, this kind of analysis assumes that the hosts are densely sampled, with at least 50% of the hosts being sampled. If fewer hosts are sampled, little information about the who-infected-who process can be inferred, though the method still can be used as tree prior.
+
 ----
 
 # Programs used in this Exercise
@@ -117,9 +132,23 @@ The transmission tree likelihood has the following components:
 * deltaStartTime: time at which the study start till root of tree (optional, default: 0). 
 * allowTransmissionsAfterSampling: flag to indicate sampling does not affect the probability of onwards transmissions. If false, no onwards transmissions are allowed (not clear how this affects the unknown unknowns though). (optional, default: true)
 * includeCoalescent: flag for debugging that includes contribution from coalescent to posterior if true (default: true).
-* population model: A constant size population is assumed for the coalescent process inside each host. The prior on the population size can be set.
 
-For more details, we refer to the paper.
+The two hazard functions probably need a bit of thought and knowledge to inform their parameters. For more details, we refer to the paper.
+
+
+### Hyperpriors
+
+The transmission tree prior comes with four hyperpriors: block start, end and count and tranmission population size
+
+* block start and end represent fractions on a branch, so should be in the interval from zero to 1 (and the associated parameters are bounded by these values). Be default, a uniform(0,1) prior is used. Unless you have good reasons to change, this can be left as is.
+* block counts represent how many infections take place in a block. 
+	* A value of -1 indicates there is not transmission on the branch
+	* A value of 0 indicates there is 1 transmission on the branch, block start and end have the same value and determine where on the branch the transmission takes place.
+	* A value of 1 or more indicates 1 or more transmissions happen in a block, one at block end and one at block start, so they block start and end differ for these branches.
+	So, values below -1 do not make sense, and values over 4 indicate 5 transmission happen on a branch. Note that this many transmissions only tend to happen when there are very long branches in the tree, and suggest a sampling probability of hosts being on the low side of where the transmission tree model makes sense.
+	The default prior is uniform in the range -1 to 4.
+* A constant size population is assumed for the coalescent process inside each host. Together with the sampling and transmission hazard they determine the length of branches, so be aware the population size prior and parameters of the hazard functions interact with each other.
+The prior on the population size is uniform [0, +Infinity] by default. If you observe a collapse of the tree during the MCMC coinciding with a collapsing value of the population size it may be worth increasing the value of the lower bound. For estimating marginal likelihoods through nested or path sampling, make sure to specify a reasonable upper bound in order to make the prior propper.
 
 
 Since we don't want the analysis to take too long, we only run for 5 million samples.
@@ -211,6 +240,8 @@ WIWVisualiser has the following options:
 * threshold (Double): probability threshold below which edges will be ignored. (optional, default: 0.1)
 * partition (String): name of the partition appended to `blockcount, blockend and blockstart` (optional)
 * suppressSingleton (Boolean): do not show taxa that are not connected to any otehr taxa (optional, default: true)
+* colourByAge (Boolean): colour nodes in output by node age. All blacks if false (default true)
+* widthByPosterior  (Boolean), draw line between nodes with widths proportional to posterior support (default true)
 
 ## Transmission Tree Statistics
 

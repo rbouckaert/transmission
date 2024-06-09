@@ -16,6 +16,7 @@
         <provider classname="transmission.util.InfectionCount"/>
         <provider classname="transmission.util.ColourLogger"/>
         <provider classname="transmission.util.InfectorOfLogger"/>
+        <provider classname="transmission.util.OriginCalculator"/>
 
 
         <provider classname="transmission2.TransmissionTreeLikelihood"/>

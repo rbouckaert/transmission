@@ -178,24 +178,25 @@ public class UnsampledLTTCounter extends Runnable {
 					int i = node.getNr();
 					int start = -1;
 					int end = -1;
+					double startTime = -1, endTime = -1;
 					if (count[i] < 0) {
 						if (colourAtBase[node.getNr()] >= leafNodeCount) {
 							// whole branch is unsampled
-							start = (int) (node.getHeight() * N / maxX + 0.5);
-							end = (int) (node.getParent().getHeight() * N / maxX + 0.5);
+							startTime = node.getHeight();
+							endTime = node.getParent().getHeight();
 						} else {
 							// whole branch is sampled
 						}
 					} else if (count[i] == 0) {
 						if (colourAtBase[node.getParent().getNr()] >= leafNodeCount) {
-							end = (int) (node.getParent().getHeight() * N / maxX + 0.5);
+							endTime = node.getParent().getHeight();
 						} else {
-							end = (int) ((node.getHeight() + node.getLength() * blockEnd[i]) * N / maxX + 0.5);							
+							endTime = node.getHeight() + node.getLength() * blockEnd[i];
 						}
 						if (colourAtBase[node.getNr()] >= leafNodeCount) {
-							start = (int) (node.getHeight() * N / maxX + 0.5);
+							startTime = node.getHeight();
 						} else {
-							start = (int) ((node.getHeight() + node.getLength() * blockStart[i]) * N / maxX + 0.5);
+							startTime = node.getHeight() + node.getLength() * blockStart[i];
 						}
 						if (colourAtBase[node.getParent().getNr()] < leafNodeCount &&
 								colourAtBase[node.getNr()] < leafNodeCount) {
@@ -204,25 +205,27 @@ public class UnsampledLTTCounter extends Runnable {
 						}
 					} else { // count[i] > 0
 						if (colourAtBase[node.getParent().getNr()] >= leafNodeCount) {
-							end = (int) (node.getParent().getHeight() * N / maxX + 0.5);
+							endTime = node.getParent().getHeight();
 						} else {
-							end = (int) ((node.getHeight() + node.getLength() * blockEnd[i]) * N / maxX + 0.5);							
+							endTime = node.getHeight() + node.getLength() * blockEnd[i];
 						}
 						if (colourAtBase[node.getNr()] >= leafNodeCount) {
-							start = (int) (node.getHeight() * N / maxX + 0.5);
+							startTime = node.getHeight();
 						} else {
-							start = (int) ((node.getHeight() + node.getLength() * blockStart[i]) * N / maxX + 0.5);
+							startTime = node.getHeight() + node.getLength() * blockStart[i];
 						}
 					}
-					if (start > 0) {
+					if (startTime >= 0) {
+						start = (int) (startTime * N / maxX + 0.5);
+						end = (int) (endTime * N / maxX + 0.5);
 						if (start == end) {
-							linCount[start] += node.getParent().getHeight() - node.getHeight();
+							linCount[start] += (endTime - startTime)/stepSize;
 						} else {
-							linCount[start] += ((start+1) * stepSize  - node.getHeight())/stepSize;
+							linCount[start] += ((start+1) * stepSize  - startTime)/stepSize;
 							for (int j = start+1; j < end; j++) {
 								linCount[j]++;
 							}
-							linCount[end] += node.getParent().getHeight() - end * stepSize;
+							linCount[end] += (endTime - end * stepSize) / stepSize;
 						}
 					}
 				}

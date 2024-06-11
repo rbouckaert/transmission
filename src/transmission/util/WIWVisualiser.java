@@ -3,10 +3,14 @@ package transmission.util;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -28,6 +32,7 @@ import beast.base.core.Input;
 import beast.base.core.Log;
 import beast.base.evolution.tree.Tree;
 import beast.base.inference.parameter.IntegerParameter;
+import beast.base.util.HeapSort;
 import beastfx.app.tools.LogAnalyser;
 import beastfx.app.treeannotator.TreeAnnotator;
 import beastfx.app.treeannotator.TreeAnnotator.MemoryFriendlyTreeSet;
@@ -39,6 +44,7 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 	final public Input<Integer> burnInPercentageInput = new Input<>("burnin", "percentage of trees to used as burn-in (and will be ignored)", 10);
 	final public Input<OutFile> outputInput = new Input<>("out", "output file, or stdout if not specified",
 			new OutFile("/tmp/wiw.svg"));
+	final public Input<OutFile> matrixOutputInput = new Input<>("matrix", "transition probability matrix output file, potentially useful for post-processing e.g. visualising as heat map.. Ignored if not specified.");
 	final public Input<String> prefixInput = new Input<>("prefix", "prefix of infectorOf entry, e.g., infectorOf", "infectorOf");
 	final public Input<Double> thresholdInput = new Input<>("threshold", "probability threshold below which edges will be ignored.", 0.1);
 	final public Input<String> partitionInput = new Input<>("partition", "name of the partition appended to `blockcount, blockend and blockstart`");
@@ -48,6 +54,7 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 
 	final public Input<Float> saturationInput = new Input<>("saturation", "saturation used when colouring nodes.", 0.7f);
 	final public Input<Float> brightnessInput = new Input<>("brightness", "brightness used when colouring nodes.", 0.7f);
+	final public Input<String> filterInput = new Input<>("filter", "search/replace regular expression for filtering labels. Should be of the form '/searchRegExp/replaceString/'. Ignored if not specified");
 
 	final static String DIR_SEPARATOR = (Utils.isWindows() ? "\\\\" : "/");
 
@@ -62,6 +69,14 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 		double [] age = null;
 		int n;
 		double upper = 0;
+		
+		String search = null, replace = null;
+		if (filterInput.get() != null) {
+			String filter = filterInput.get();
+			int sep = filter.indexOf('/', 1);
+			search = filter.substring(1, sep);
+			replace = filter.substring(sep + 1, filter.length() - 1);
+		}
 
 		double [][] transitions;
 		if (treeFile.get() != null && !treeFile.get().getName().equals("[[none]]")) {
@@ -81,6 +96,9 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 			nodeLabels = new String[n];
 			for (int i = 0; i < n; i++) {
 				nodeLabels[i] = tree.getNode(i).getID();
+				if (search != null) {
+					nodeLabels[i] = nodeLabels[i].replaceAll(search, replace);
+				}
 			}
 			
 	        trees.reset();
@@ -296,10 +314,62 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 		}
 		
 		
+		outputMatrix(nodeLabels, transitions);
+		
 		System.err.println("Done");	
 	}
 	
-	
+	/*
+	 * output transition matrix to tab separated file
+	 */
+	private void outputMatrix(String[] nodeLabels, double[][] transitions) throws FileNotFoundException {
+		if (matrixOutputInput.get() != null) {
+			System.err.println("Writing transition matrix " + matrixOutputInput.get().getPath());
+			int [] order = new int[nodeLabels.length];
+			
+			// labels are numeric?
+			boolean isNumeric = true;
+			for (String str : nodeLabels) {
+				try {
+					int h = Integer.valueOf(str);
+				} catch (NumberFormatException e) {
+					isNumeric = false;
+					break;
+				}
+			}
+			if (isNumeric) {
+				List<Integer> labels = new ArrayList<>();
+				for (String label : nodeLabels) {
+					labels.add(Integer.valueOf(label));
+				}
+				HeapSort.sort(labels, order);
+				
+			} else {
+				List<String> labels = new ArrayList<>();
+				for (String label : nodeLabels) {
+					labels.add(label);
+				}
+				HeapSort.sort(labels, order);
+			}
+			
+			PrintStream out = new PrintStream(matrixOutputInput.get());
+			out.print("\t");
+			for (int i = 0; i < nodeLabels.length; i++) {
+				out.print(nodeLabels[order[i]] + "\t");
+			}
+			out.println();
+			for (int i = 0; i < nodeLabels.length; i++) {
+				out.print(nodeLabels[order[i]] + "\t");
+				for (int j = 0; j < nodeLabels.length; j++) {
+					out.print(transitions[order[i]][order[j]] + "\t");
+				}
+				out.println();
+			}
+			
+			out.close();
+		}
+	}
+
 	public static void main(String[] args) throws Exception {
 		new Application(new WIWVisualiser(), "Who-Infected-Who Visualiser", args);
 	}

@@ -3,7 +3,7 @@ author: Remco Bouckaert
 level: Intermediate
 title: Transmission Tree Tutorial
 subtitle: Inferring who-infected-who
-beastversion: 2.7.5
+beastversion: 2.7.6
 ---
 
 
@@ -17,6 +17,7 @@ This has a number of benefits over existing methods for inference who-infected-w
 * It captures phylogenetic uncertainty impacting tranmission chains more accurately than when a phylogeny is inferred first, and then transmissions are inferred on a summary tree.
 * It provides a tree generating process that we can use as tree prior, thus more accurately describing our prior knowledge about how the phylogeny evolved than if we are using standard coalescent or birth-death based tree priors.
 * It can deal with hosts that were not sampled but are part of the transmission chain.
+* The analysis can be set up in BEAUti, the graphical user interface for BEAST.
 
 There are some limitations that need to be taken in account:
 
@@ -107,7 +108,10 @@ Next, we set up the transmission tree prior.
 
 > * Click the `Priors` panel.
 > * Change the default Yule Model for tree prior to `Transmission`.
-> * New priors appear for the block-count, block-start and end, and for transmission tree population size. Click on the triangle next to `Tree.t:roetzer40` to show the parameter so the `Transmission` tree likelihood.
+> * New priors appear for the block-count, block-start and end, transmission tree origin
+and population size. 
+> * Set the lower bound for population size to 0.1.
+> * Click on the triangle next to `Tree.t:roetzer40` to show the parameter so the `Transmission` tree likelihood.
 > * Go to the population size prior (at the bottom), open the distribution by clicking the triangle next to the prior, and set the lower bound to 0.1 (this prevents the tree collapsing).
 
 <figure>
@@ -148,13 +152,14 @@ The transmission tree prior comes with four hyperpriors: block start, end and co
 	So, values below -1 do not make sense, and values over 4 indicate 5 transmission happen on a branch. Note that this many transmissions only tend to happen when there are very long branches in the tree, and suggest a sampling probability of hosts being on the low side of where the transmission tree model makes sense.
 	The default prior is uniform in the range -1 to 4.
 * A constant size population is assumed for the coalescent process inside each host. Together with the sampling and transmission hazard they determine the length of branches, so be aware the population size prior and parameters of the hazard functions interact with each other.
-The prior on the population size is uniform [0, +Infinity] by default. If you observe a collapse of the tree during the MCMC coinciding with a collapsing value of the population size it may be worth increasing the value of the lower bound. For estimating marginal likelihoods through nested or path sampling, make sure to specify a reasonable upper bound in order to make the prior propper.
+The prior on the population size is uniform [0, +Infinity) by default. If you observe a collapse of the tree during the MCMC coinciding with a collapsing value of the population size it may be worth increasing the value of the lower bound. For estimating marginal likelihoods through nested or path sampling, make sure to specify a reasonable upper bound in order to make the prior propper.
+* A uniform prior is assumed for the origin of the tree, that is, the place where the host at the root of the tree got infected. The default is set to uniform [0, +Infinity). If you have any information about the age of the outbreak it makes sense to specify the upper bound and make this a proper prior.
 
 
 Since we don't want the analysis to take too long, we only run for 5 million samples.
 
 > * In the MCMC panel, set the chainLength to 5 million samples.
-> * Optionally, you might want to reduce the log frequency of the screen logger to 100000.
+> * Optionally, you might want to reduce the log frequency of the screen logger to 100000 and that for the trace and tree logger to 2000.
 > * Safe the file to `roetzer.xml`
 
 <figure>
@@ -180,7 +185,7 @@ The longer runs (marked with `long` in their name) are
 	<figcaption>Figure: Convergence of MCMC in Tracer.</figcaption>
 </figure>
 
-The short 5 million sample run has not quite converged yet, but the longer run does.
+The short 5 million sample run has not quite converged yet, but the longer pre-cooked run does.
 
 
 Inspect the tree file, for example in DensiTree. It shows that there is a lot of uncertainty in the tree distribution
@@ -236,12 +241,16 @@ WIWVisualiser has the following options:
 * log (LogFile): trace file containing infectorOf log. Ignored if tree file is specified (optional, default: [[none]])
 * burnin (Integer): percentage of trees to used as burn-in (and will be ignored) (optional, default: 10)
 * out (OutFile): output file, or stdout if not specified (optional, default: /tmp/wiw.svg)
+* matrix (OutFile): transition probability matrix output file, potentially useful for post-processing e.g. visualising as heat map. Ignored if not specified.
 * prefix (String): prefix of infectorOf entry, e.g., infectorOf (optional, default: infectorOf)
 * threshold (Double): probability threshold below which edges will be ignored. (optional, default: 0.1)
 * partition (String): name of the partition appended to `blockcount, blockend and blockstart` (optional)
 * suppressSingleton (Boolean): do not show taxa that are not connected to any otehr taxa (optional, default: true)
 * colourByAge (Boolean): colour nodes in output by node age. All blacks if false (default true)
 * widthByPosterior  (Boolean), draw line between nodes with widths proportional to posterior support (default true)
+* saturation (Float): saturation used when colouring nodes. (optional, default: 0.7)
+* brightness (Float): brightness used when colouring nodes. (optional, default: 0.7)
+* filter (String): search/replace regular expression for filtering labels. Should be of the form '/searchRegExp/replaceString/'. Ignored if not specified (optional)
 
 ## Transmission Tree Statistics
 
@@ -278,29 +287,6 @@ It also records the time till infects a second host.
 If no host(s) are infected, -1 is output -- this shows up when you open the file in Tracer as a peak around -1.
 Checking the time-till-first-tranmission and time-till-second-transmission can be useful in verifying the transmission hazard is properly parameterised.
 
-
-## Transmission Tree Simulation
-
-The `tranmission` package comes with a tranmission tree simulator that can be run as an app via the `applauncher`. It simulates transmission trees with colouring and block counts.
-
-`TransmissionTreeSimulator` has the following options:
-* endTime (Function): end time of the study (optional, default: constant)
-* popSize (Function): population size governing the coalescent process (optional, default: constant)
-* sampleShape (Function): shape parameter of the sampling intensity function (optional, default: constant)
-* sampleRate (Function): rate parameter of the sampling intensity function (optional, default: constant)
-* sampleConstant (Function): constant multiplier of the sampling intensity function (optional, default: constant)
-* transmissionShape (Function): shape parameter of the transmission intensity function (optional, default: constant)
-* transmissionRate (Function): rate parameter of the transmission intensity function (optional, default: constant)
-* transmissionConstant (Function): constant multiplier of the transmission intensity function (optional, default: constant)
-* out (OutFile): output file. Print to stdout if not specified (optional)
-* trace (OutFile): trace output file, or stdout if not specified (optional, default: [[none]])
-* seed (Long): random number seed used to initialise the random number generator (optional)
-* maxAttempts (Integer): maximum number of attempts to generate coalescent sub-trees (optional, default: 1000)
-* taxonCount (Integer): generate tree with taxonCount number of taxa. Ignored if negative (optional, default: -1)
-* maxTaxonCount (Integer): reject any tree with more than this number of taxa. Ignored if negative (optional, default: -1)
-* treeCount (Integer): generate treeCount number of trees (optional, default: 1)
-* directOnly (Boolean): consider direct infections only, if false block counts are ignored (optional, default: true)
-* quiet (Boolean): suppress some screen output (optional, default: false)
 
 
 ----

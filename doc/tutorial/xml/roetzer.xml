@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.base.evolution.alignment:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="BEAST.base v2.7.6:transmission v0.0.1" version="2.7">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.base.evolution.alignment:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="BEAST.base v2.7.7:transmission v0.0.1" version="2.7">
 
     <data
 id="roetzer40"
@@ -85,7 +85,7 @@ name="alignment">
             <parameter id="blockend.t:roetzer40" spec="parameter.RealParameter" dimension="78" lower="0.0" name="stateNode" upper="1.0">0.5</parameter>
             <stateNode id="blockcount.t:roetzer40" spec="parameter.IntegerParameter" dimension="79" lower="-1" upper="100000">0</stateNode>
             <parameter id="transmissionPopSize.t:roetzer40" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="Infinity">0.5</parameter>
-            <parameter id="transmissionDeltaStartTime.t:roetzer40" lower="0.0" spec="parameter.RealParameter" name="stateNode">1.0</parameter>
+            <parameter id="transmissionDeltaStartTime.t:roetzer40" spec="parameter.RealParameter" lower="0.0" name="stateNode">1.0</parameter>
         </state>
         <init id="RandomTree.t:roetzer40" spec="RandomTree" estimate="false" initial="@Tree.t:roetzer40" taxa="@roetzer40">
             <populationModel id="ConstantPopulation0.t:roetzer40" spec="ConstantPopulation">
@@ -144,7 +144,7 @@ name="alignment">
                     <Uniform id="Uniform.7" name="distr" upper="Infinity"/>
                 </prior>
                 <prior id="TransmissionPopSizePrior.t:roetzer40" name="distribution" x="@transmissionPopSize.t:roetzer40">
-                    <Uniform id="Uniform.6" name="distr" lower="0.1" upper="Infinity"/>
+                    <Uniform id="Uniform.6" lower="0.1" name="distr" upper="Infinity"/>
                 </prior>
             </distribution>
             <distribution id="likelihood" spec="CompoundDistribution" useThreads="true">
@@ -220,7 +220,7 @@ name="alignment">
         <operator id="transmissionInfectionMover.t:roetzer40" spec="transmission.operator.InfectionMover" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" likelihood="@transmissionLikelihood.t:roetzer40" weight="50.0"/>
         <operator id="transmissionBlockOperator.t:roetzer40" spec="transmission.operator.BlockOperator" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" tree="@Tree.t:roetzer40" weight="50.0"/>
         <operator id="transmissionPopSizeScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionPopSize.t:roetzer40" scaleFactor="0.1" upper="10.0" weight="5.0"/>
-        <operator id="transmissionDeltaStartTimeScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionDeltaStartTime.t:roetzer40" scaleFactor="0.1" upper="10.0" weight="0.5"/>
+        <operator id="transmissionDeltaStartTimeScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionDeltaStartTime.t:roetzer40" scaleFactor="0.1" upper="10.0" weight="0.05"/>
         <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="2000" model="@posterior" sanitiseHeaders="true" sort="smart">
             <log idref="posterior"/>
             <log idref="likelihood"/>

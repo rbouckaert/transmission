@@ -22,7 +22,7 @@
         
         <distribution id="prior" spec="CompoundDistribution">
                 <!-- transmission likelihood -->
-                <distribution id="transmissionLikelihood.t:dna" spec="transmission.distribution.TransmissionTreeLikelihood" colourOnly="true">
+                <distribution id="transmissionLikelihood.t:dna" spec="breath.distribution.TransmissionTreeLikelihood" colourOnly="true">
                 	<tree idref="Tree.t:dna"/>
                 	<blockstart id="blockstart.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
                 	<blockend   id="blockend.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
@@ -32,8 +32,8 @@
 		            </populationModel>
 		            <endTime  id="endTime.t:dna" spec="parameter.RealParameter" value="0"/>
 		            <lambda   id="lambda.t:dna" spec="parameter.RealParameter" value="4"/>
-		            <samplingHazard id="samplingHazard.t:dna" spec="transmission.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.0"/>
-		            <transmissionHazard id="transmissionHazard.t:dna" spec="transmission.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.5"/>
+		            <samplingHazard id="samplingHazard.t:dna" spec="breath.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.0"/>
+		            <transmissionHazard id="transmissionHazard.t:dna" spec="breath.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.5"/>
                 </distribution>
 
             <prior name="distribution" id="BlockCountPrior.s:dna" x="@blockcount.t:dna">
@@ -48,7 +48,7 @@
         </distribution>
         
 		<!-- estimated transmission parameters -->
-        <operator id="InfectionMover.t:dna" spec="transmission.operator.InfectionMover" 
+        <operator id="InfectionMover.t:dna" spec="breath.operator.InfectionMover" 
         	blockstart="@blockstart.t:dna" 
         	blockend="@blockend.t:dna" 
         	blockcount="@blockcount.t:dna" 
@@ -66,7 +66,7 @@
         </logger>
 
         <logger id="treelogB.t:dna" spec="Logger" fileName="$(filebase)b.trees" logEvery="1000" mode="tree">
-            <log id="TreeWithMetaDataLoggerB.t:dna" spec="transmission.logger.ColouredTreeLogger" 
+            <log id="TreeWithMetaDataLoggerB.t:dna" spec="breath.logger.ColouredTreeLogger" 
             	tree="@Tree.t:dna" 
             	blockstart="@blockstart.t:dna" 
             	blockend="@blockend.t:dna"

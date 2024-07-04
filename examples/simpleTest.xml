@@ -67,7 +67,7 @@ name="alignment">
                 </prior>
                 
                 <!-- transmission likelihood -->
-                <distribution id="transmissionLikelihood.t:dna" spec="transmission.distribution.TransmissionTreeLikelihood">
+                <distribution id="transmissionLikelihood.t:dna" spec="breath.distribution.TransmissionTreeLikelihood">
                 	<tree idref="Tree.t:dna"/>
                 	<blockstart id="blockstart.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
                 	<blockend   id="blockend.t:dna" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
@@ -77,8 +77,8 @@ name="alignment">
 		            </populationModel>
 		            <endTime  id="endTime.t:dna" spec="parameter.RealParameter" value="0"/>
 		            <lambda   id="lambda.t:dna" spec="parameter.RealParameter" value="4"/>
-		            <samplingHazard id="samplingHazard.t:dna" spec="transmission.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.0"/>
-		            <transmissionHazard id="transmissionHazard.t:dna" spec="transmission.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.5"/>
+		            <samplingHazard id="samplingHazard.t:dna" spec="breath.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.0"/>
+		            <transmissionHazard id="transmissionHazard.t:dna" spec="breath.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.5"/>
                 </distribution>
                 
                 <prior id="KappaPrior.s:dna" name="distribution" x="@kappa.s:dna">
@@ -169,7 +169,7 @@ name="alignment">
             	<metadata idref="blockstart.t:dna"/>
             	<metadata idref="blockend.t:dna"/>
             	<metadata idref="blockcount.t:dna"/>
-            	<metadata id="colour" spec="transmission.util.ColourLogger" likelihood="@transmissionLikelihood.t:dna"/>
+            	<metadata id="colour" spec="breath.util.ColourLogger" likelihood="@transmissionLikelihood.t:dna"/>
             </log>
         </logger>
         <operatorschedule id="OperatorSchedule" spec="OperatorSchedule"/>

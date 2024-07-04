@@ -26,7 +26,7 @@
         </distribution>
         
 		<!-- estimated transmission parameters -->
-        <operator id="blockStartScaler.t:dna" spec="transmission.operator.BlockOperator" 
+        <operator id="blockStartScaler.t:dna" spec="breath.operator.BlockOperator" 
         	blockstart="@blockstart.t:dna" 
         	blockend="@blockend.t:dna" 
         	blockcount="@blockcount.t:dna" 

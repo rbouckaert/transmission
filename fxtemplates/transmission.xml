@@ -4,7 +4,7 @@
     <!-- tree priors -->
     <mergewith point='treePriorTemplates'>
         <!-- TransmissionTreeLikelihood -->
-        <subtemplate id='Transmission' class='transmission.distribution.TransmissionTreeLikelihood' mainid='transmissionLikelihood.t:$(n)' 
+        <subtemplate id='Transmission' class='breath.distribution.TransmissionTreeLikelihood' mainid='transmissionLikelihood.t:$(n)' 
 hmc="TransMissionUniformOperator/index/=Operators/BactrianNodeOperator/,
 TransMissionSubtreeSlide/index/=Operators/SubtreeSlide/,
 TransMissionNarrow/index/=Operators/Exchange/,
@@ -15,20 +15,20 @@ TransMissionBICEPSEpochAll/index/=Operators/EpochFlexer/,
 TransMissionBICEPSTreeFlex/index/=Operators/TreeStretcher/,
 TransMissionTreeRootScaler/index/=Operators/BactrianTreeScaler/
 "
-suppressInputs="transmission.distribution.TransmissionTreeLikelihood.treeIntervals,
-transmission.distribution.TransmissionTreeLikelihood.useTipDates,
-transmission.distribution.TransmissionTreeLikelihood.colourOnly,
-transmission.distribution.TransmissionTreeLikelihood.tree,
-transmission.distribution.TransmissionTreeLikelihood.blockstart,
-transmission.distribution.TransmissionTreeLikelihood.blockend,
-transmission.distribution.TransmissionTreeLikelihood.blockcount,
-transmission.distribution.TransmissionTreeLikelihood.populationModel,
-transmission.distribution.GammaHazardFunction.scale
+suppressInputs="breath.distribution.TransmissionTreeLikelihood.treeIntervals,
+breath.distribution.TransmissionTreeLikelihood.useTipDates,
+breath.distribution.TransmissionTreeLikelihood.colourOnly,
+breath.distribution.TransmissionTreeLikelihood.tree,
+breath.distribution.TransmissionTreeLikelihood.blockstart,
+breath.distribution.TransmissionTreeLikelihood.blockend,
+breath.distribution.TransmissionTreeLikelihood.blockcount,
+breath.distribution.TransmissionTreeLikelihood.populationModel,
+breath.distribution.GammaHazardFunction.scale
 "
 >
             <![CDATA[
                 
-                <distribution id="transmissionLikelihood.t:$(n)" spec="transmission.distribution.TransmissionTreeLikelihood" colourOnly="false">
+                <distribution id="transmissionLikelihood.t:$(n)" spec="breath.distribution.TransmissionTreeLikelihood" colourOnly="false">
                 	<tree idref="Tree.t:$(n)"/>
                 	<blockstart id="blockstart.t:$(n)" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
                 	<blockend   id="blockend.t:$(n)" spec="parameter.RealParameter" value="0.5" lower="0" upper="1.0"/>
@@ -37,8 +37,8 @@ transmission.distribution.GammaHazardFunction.scale
         		        <popSize id="transmissionPopSize.t:$(n)" spec="parameter.RealParameter" lower="0.0" upper="Infinity">0.5</popSize>
 		            </populationModel>
 		            <endTime  id="endTime.t:$(n)" spec="parameter.RealParameter" value="-1"/>
-                    <samplingHazard id="samplingHazard.t:$(n)" spec="transmission.distribution.GammaHazardFunction" shape="10.0" rate="6.5" C="0.75"/>
-                    <transmissionHazard id="transmissionHazard.t:$(n)" spec="transmission.distribution.GammaHazardFunction" shape="10.0" rate="8.5" C="2.0"/>
+                    <samplingHazard id="samplingHazard.t:$(n)" spec="breath.distribution.GammaHazardFunction" shape="10.0" rate="6.5" C="0.75"/>
+                    <transmissionHazard id="transmissionHazard.t:$(n)" spec="breath.distribution.GammaHazardFunction" shape="10.0" rate="8.5" C="2.0"/>
                     <deltaStartTime id="transmissionDeltaStartTime.t:$(n)" lower="0.0" spec="parameter.RealParameter" value="1"/>
                 </distribution>
 
@@ -56,19 +56,19 @@ transmission.distribution.GammaHazardFunction.scale
         	        <distr spec="beast.base.inference.distribution.Uniform" lower="0" upper="Infinity"/>
             	</prior>
               <prior id="TransmissionOriginPrior.t:$(n)">
-               <x id="transmissionOrigin.t:$(n)" spec="transmission.util.OriginCalculator" tree="@Tree.t:$(n)" deltaStartTime="@transmissionDeltaStartTime.t:$(n)"/>
+               <x id="transmissionOrigin.t:$(n)" spec="breath.util.OriginCalculator" tree="@Tree.t:$(n)" deltaStartTime="@transmissionDeltaStartTime.t:$(n)"/>
                  <distr spec="beast.base.inference.distribution.Uniform" lower="0" upper="Infinity"/>
                </prior>
 
         <!-- estimated transmission parameters -->
-        <operator id="transmissionInfectionMover.t:$(n)" spec="transmission.operator.InfectionMover" 
+        <operator id="transmissionInfectionMover.t:$(n)" spec="breath.operator.InfectionMover" 
         	blockstart="@blockstart.t:$(n)" 
         	blockend="@blockend.t:$(n)" 
         	blockcount="@blockcount.t:$(n)" 
         	likelihood="@transmissionLikelihood.t:$(n)"
         	weight="50.0"/>
         	
-        <operator id="transmissionBlockOperator.t:$(n)" spec="transmission.operator.BlockOperator" 
+        <operator id="transmissionBlockOperator.t:$(n)" spec="breath.operator.BlockOperator" 
                 blockstart="@blockstart.t:$(n)" 
                 blockend="@blockend.t:$(n)" 
                 blockcount="@blockcount.t:$(n)" 

@@ -19,7 +19,7 @@ import beast.base.evolution.tree.coalescent.PopulationFunction;
 import beast.base.inference.State;
 import beast.base.inference.parameter.RealParameter;
 import beast.base.util.Binomial;
-import transmission.distribution.HazardFunction;
+import breath.distribution.HazardFunction;
 
 @Description("Likelihood of a transmission tree")
 public class TransmissionTreeLikelihood1 extends TreeDistribution {

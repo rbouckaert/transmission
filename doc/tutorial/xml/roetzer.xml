@@ -94,15 +94,15 @@ name="alignment">
         </init>
         <distribution id="posterior" spec="CompoundDistribution">
             <distribution id="prior" spec="CompoundDistribution">
-                <distribution id="transmissionLikelihood.t:roetzer40" spec="transmission.distribution.TransmissionTreeLikelihood" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" deltaStartTime="@transmissionDeltaStartTime.t:roetzer40" tree="@Tree.t:roetzer40">
+                <distribution id="transmissionLikelihood.t:roetzer40" spec="breath.distribution.TransmissionTreeLikelihood" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" deltaStartTime="@transmissionDeltaStartTime.t:roetzer40" tree="@Tree.t:roetzer40">
                     <populationModel id="ConstantTransmissionPopulation.t:roetzer40" spec="ConstantPopulation" popSize="@transmissionPopSize.t:roetzer40"/>
                     <parameter id="endTime.t:roetzer40" spec="parameter.RealParameter" name="endTime">-1.0</parameter>
-                    <samplingHazard id="samplingHazard.t:roetzer40" spec="transmission.distribution.GammaHazardFunction">
+                    <samplingHazard id="samplingHazard.t:roetzer40" spec="breath.distribution.GammaHazardFunction">
                         <shape id="Function$Constant.0" spec="Function$Constant" value="10.0"/>
                         <rate id="Function$Constant.1" spec="Function$Constant" value="6.5"/>
                         <C id="Function$Constant.2" spec="Function$Constant" value="0.75"/>
                     </samplingHazard>
-                    <transmissionHazard id="transmissionHazard.t:roetzer40" spec="transmission.distribution.GammaHazardFunction">
+                    <transmissionHazard id="transmissionHazard.t:roetzer40" spec="breath.distribution.GammaHazardFunction">
                         <shape id="Function$Constant.3" spec="Function$Constant" value="10.0"/>
                         <rate id="Function$Constant.4" spec="Function$Constant" value="8.5"/>
                         <C id="Function$Constant.5" spec="Function$Constant" value="2.0"/>
@@ -140,7 +140,7 @@ name="alignment">
                     <Uniform id="Uniform.2" name="distr"/>
                 </prior>
                 <prior id="TransmissionOriginPrior.t:roetzer40" name="distribution">
-                    <x id="transmissionOrigin.t:roetzer40" spec="transmission.util.OriginCalculator" deltaStartTime="@transmissionDeltaStartTime.t:roetzer40" tree="@Tree.t:roetzer40"/>
+                    <x id="transmissionOrigin.t:roetzer40" spec="breath.util.OriginCalculator" deltaStartTime="@transmissionDeltaStartTime.t:roetzer40" tree="@Tree.t:roetzer40"/>
                     <Uniform id="Uniform.7" name="distr" upper="Infinity"/>
                 </prior>
                 <prior id="TransmissionPopSizePrior.t:roetzer40" name="distribution" x="@transmissionPopSize.t:roetzer40">
@@ -217,8 +217,8 @@ name="alignment">
         <operator id="transmissionLikelihoodNarrow.t:roetzer40" spec="Exchange" tree="@Tree.t:roetzer40" weight="15.0"/>
         <operator id="transmissionLikelihoodWide.t:roetzer40" spec="Exchange" isNarrow="false" tree="@Tree.t:roetzer40" weight="3.0"/>
         <operator id="transmissionLikelihoodWilsonBalding.t:roetzer40" spec="WilsonBalding" tree="@Tree.t:roetzer40" weight="3.0"/>
-        <operator id="transmissionInfectionMover.t:roetzer40" spec="transmission.operator.InfectionMover" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" likelihood="@transmissionLikelihood.t:roetzer40" weight="50.0"/>
-        <operator id="transmissionBlockOperator.t:roetzer40" spec="transmission.operator.BlockOperator" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" tree="@Tree.t:roetzer40" weight="50.0"/>
+        <operator id="transmissionInfectionMover.t:roetzer40" spec="breath.operator.InfectionMover" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" likelihood="@transmissionLikelihood.t:roetzer40" weight="50.0"/>
+        <operator id="transmissionBlockOperator.t:roetzer40" spec="breath.operator.BlockOperator" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" tree="@Tree.t:roetzer40" weight="50.0"/>
         <operator id="transmissionPopSizeScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionPopSize.t:roetzer40" scaleFactor="0.1" upper="10.0" weight="5.0"/>
         <operator id="transmissionDeltaStartTimeScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionDeltaStartTime.t:roetzer40" scaleFactor="0.1" upper="10.0" weight="0.05"/>
         <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="2000" model="@posterior" sanitiseHeaders="true" sort="smart">

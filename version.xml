@@ -1,24 +1,24 @@
-<package name="transmission" version="0.0.1">
+<package name="BREATH" version="0.0.1">
     <depends on="BEAST.base" atleast="2.7.5"/>
     <depends on="BEAST.app" atleast="2.7.5"/>
 
     
     <service type="beast.base.core.BEASTInterface">
-        <provider classname="transmission.distribution.TransmissionTreeLikelihood"/>
-        <provider classname="transmission.distribution.GammaHazardFunction"/>
-        <provider classname="transmission.distribution.Validator"/>
+        <provider classname="breath.distribution.TransmissionTreeLikelihood"/>
+        <provider classname="breath.distribution.GammaHazardFunction"/>
+        <provider classname="breath.distribution.Validator"/>
         
-        <provider classname="transmission.operator.BlockOperator"/>
-        <provider classname="transmission.operator.InfectionMover"/>
-        <provider classname="transmission.operator.InfectionMover2"/>
+        <provider classname="breath.operator.BlockOperator"/>
+        <provider classname="breath.operator.InfectionMover"/>
+        <provider classname="breath.operator.InfectionMover2"/>
         
-		<provider classname="transmission.logger.ColouredTreeLogger"/>
-        <provider classname="transmission.util.InfectionCount"/>
-        <provider classname="transmission.util.ColourLogger"/>
-        <provider classname="transmission.util.InfectorOfLogger"/>
-        <provider classname="transmission.util.OriginCalculator"/>
+		<provider classname="breath.logger.ColouredTreeLogger"/>
+        <provider classname="breath.util.InfectionCount"/>
+        <provider classname="breath.util.ColourLogger"/>
+        <provider classname="breath.util.InfectorOfLogger"/>
+        <provider classname="breath.util.OriginCalculator"/>
 
-
+<!--
         <provider classname="transmission2.TransmissionTreeLikelihood"/>
         <provider classname="transmission2.TransmissionSet"/>
         <provider classname="transmission2.InfectionMover"/>
@@ -28,21 +28,22 @@
         <provider classname="transmission2.InfectorOfLogger"/>
         <provider classname="transmission2.GeometricDistribution"/>
         <provider classname="transmission2.BlockCountLogger"/>
+-->        
 	</service>    
 	
     <service type="beastfx.app.inputeditor.InputEditor">
-		<provider classname="transmission.beauti.GammaHazardFunctionInputEditor"/>
+		<provider classname="breath.beauti.GammaHazardFunctionInputEditor"/>
 	</service>    
 	
-	<packageapp description="Convert transmission tree log into trace log with who infected who" class="transmission.util.TransmissionTree2InfectorOfLog" args=""/>
-    <packageapp description="Convert transmission tree log into bar plot with transmission times" class="transmission.util.TransmissionTreeInfectionTimes" args=""/>
-	<packageapp description="Calculate coverage of who infected who" class="transmission.util.InfectedByCoverageCalculator" args=""/>
-	<packageapp description="Create coverage plot from Infected-By-Coverage-Calculator screen output" class="transmission.util.CoveragePlot" args=""/>
-    <packageapp description="Simulates transmission tree" class="transmission.util.TransmissionTreeSimulator" args=""/>
-    <packageapp description="Provide statistics of set of transmission trees" class="transmission.util.TransmissionTreeStats" args=""/>
-    <packageapp description="Create SVG files to visualise who infected who" class="transmission.util.WIWVisualiser" args=""/>
+	<packageapp description="Convert transmission tree log into trace log with who infected who" class="breath.util.TransmissionTree2InfectorOfLog" args=""/>
+    <packageapp description="Convert transmission tree log into bar plot with transmission times" class="breath.util.TransmissionTreeInfectionTimes" args=""/>
+	<packageapp description="Calculate coverage of who infected who" class="breath.util.InfectedByCoverageCalculator" args=""/>
+	<packageapp description="Create coverage plot from Infected-By-Coverage-Calculator screen output" class="breath.util.CoveragePlot" args=""/>
+    <packageapp description="Simulates transmission tree" class="breath.util.TransmissionTreeSimulator" args=""/>
+    <packageapp description="Provide statistics of set of transmission trees" class="breath.util.TransmissionTreeStats" args=""/>
+    <packageapp description="Create SVG files to visualise who infected who" class="breath.util.WIWVisualiser" args=""/>
 
-    <packageapp description="Produce table for lineages through time plot of unsampled hosts with 95%HPD bounds" class="transmission.util.UnsampledLTTCounter" args=""/>
+    <packageapp description="Produce table for lineages through time plot of unsampled hosts with 95%HPD bounds" class="breath.util.UnsampledLTTCounter" args=""/>
 
 	
 </package>

@@ -1,7 +1,7 @@
 ---
 author: Remco Bouckaert
 level: Intermediate
-title: Transmission Tree Tutorial
+title: BREATH transmission tree tutorial
 subtitle: Inferring who-infected-who
 beastversion: 2.7.6
 ---
@@ -11,7 +11,7 @@ beastversion: 2.7.6
 
 In a disease outbreak, knowledge about who-infected-who can be crucial in managing the trajectory of the epidemic.
 Since it is routine these days to sequence pathogens in serious outbreaks, it becomes appealing to use these sequences in making inferences about who-infected-who.
-The transmission tree model {% cite Colijn et al. 2024 %} allows simultaneous inference of the phylogeny of the pathogen and transmission amongst hosts, including unsampled hosts.
+The BREATH model {% cite Colijn et al. 2024 %} allows simultaneous inference of the phylogeny of the pathogen and transmission amongst hosts, including unsampled hosts.
 This has a number of benefits over existing methods for inference who-infected-who:
 
 * It captures phylogenetic uncertainty impacting tranmission chains more accurately than when a phylogeny is inferred first, and then transmissions are inferred on a summary tree.
@@ -49,11 +49,11 @@ Tracer is used to summarise the posterior estimates of the various parameters sa
 
 We will set up an analysis in BEAUti using a transmission tree prior of a tuberculosis outbreak in Hamburg, Germany, earlier analysed in {% cite roetzer2013whole %}.
 To reduce run-time, we only analyse a subset of 40 samples, then run BEAST and analyse the results. 
-We will be using the `transmission` package, so make sure it is installed, like so:
+We will be using the `BREATH` package, so make sure it is installed, like so:
 
 > * Start BEAUti
 > * Click to the `File => Manage packages` menu item.
-> * Select `transmission` in the list of packages and the click `Install` button.
+> * Select `BREATH` in the list of packages and the click `Install` button.
 > * Close BEAUti -- it needs to restart to pick up the new packages.
 
 ## Set up in BEAUti

@@ -11,7 +11,7 @@ import beast.base.evolution.tree.TreeInterface;
 import beast.base.inference.CalculationNode;
 import beast.base.inference.parameter.IntegerParameter;
 import beast.base.inference.parameter.RealParameter;
-import transmission.distribution.ColourProvider;
+import breath.distribution.ColourProvider;
 
 @Description("Helper class to convert set of transmissions encoded as node numbes and branch fractions to per node lists of transmissions")
 public class TransmissionSet extends CalculationNode {

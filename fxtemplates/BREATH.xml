@@ -37,9 +37,10 @@ breath.distribution.GammaHazardFunction.scale
         		        <popSize id="transmissionPopSize.t:$(n)" spec="parameter.RealParameter" lower="0.0" upper="Infinity">0.5</popSize>
 		            </populationModel>
 		            <endTime  id="endTime.t:$(n)" spec="parameter.RealParameter" value="-1"/>
+
+		            <origin  id="transmissionOrigin.t:$(n)" spec="parameter.RealParameter" value="10000"/>
                     <samplingHazard id="samplingHazard.t:$(n)" spec="breath.distribution.GammaHazardFunction" shape="10.0" rate="6.5" C="0.75"/>
                     <transmissionHazard id="transmissionHazard.t:$(n)" spec="breath.distribution.GammaHazardFunction" shape="10.0" rate="8.5" C="2.0"/>
-                    <deltaStartTime id="transmissionDeltaStartTime.t:$(n)" lower="0.0" spec="parameter.RealParameter" value="1"/>
                 </distribution>
 
                 <!-- transmission likelihood priors -->
@@ -55,10 +56,9 @@ breath.distribution.GammaHazardFunction.scale
     	        <prior id="TransmissionPopSizePrior.t:$(n)" x="@transmissionPopSize.t:$(n)">
         	        <distr spec="beast.base.inference.distribution.Uniform" lower="0" upper="Infinity"/>
             	</prior>
-              <prior id="TransmissionOriginPrior.t:$(n)">
-               <x id="transmissionOrigin.t:$(n)" spec="breath.util.OriginCalculator" tree="@Tree.t:$(n)" deltaStartTime="@transmissionDeltaStartTime.t:$(n)"/>
-                 <distr spec="beast.base.inference.distribution.Uniform" lower="0" upper="Infinity"/>
-               </prior>
+    	        <prior id="TransmissionOriginPrior.t:$(n)" x="@transmissionOrigin.t:$(n)">
+        	        <distr spec="beast.base.inference.distribution.Uniform" lower="0" upper="Infinity"/>
+            	</prior>
 
         <!-- estimated transmission parameters -->
         <operator id="transmissionInfectionMover.t:$(n)" spec="breath.operator.InfectionMover" 
@@ -75,7 +75,8 @@ breath.distribution.GammaHazardFunction.scale
                 tree="@Tree.t:$(n)"
                 weight="50.0"/>
         <operator id="transmissionPopSizeScaler.t:$(n)" spec="kernel.BactrianScaleOperator" parameter="@transmissionPopSize.t:$(n)" scaleFactor="0.1" upper="10.0" weight="5.0"/>
-        <operator id="transmissionDeltaStartTimeScaler.t:$(n)" spec="kernel.BactrianScaleOperator" parameter="@transmissionDeltaStartTime.t:$(n)" scaleFactor="0.1" upper="10.0" weight="0.05"/>
+
+        <operator id="transmissionOriginScaler.t:$(n)" spec="kernel.BactrianScaleOperator" parameter="@transmissionOrigin.t:$(n)" scaleFactor="0.1" upper="10.0" weight="0.5"/>
 ]]>
 			<plate fragment="TreeOperators" var="m" range="transmissionLikelihood"/>
 
@@ -92,12 +93,12 @@ breath.distribution.GammaHazardFunction.scale
                      Transmission block end prior on tree t:$(n)
             </connect>
             <connect srcID='TransmissionPopSizePrior.t:$(n)' targetID='prior' inputName='distribution'
-                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'>
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(transmissionPopSize.t:$(n)) and transmissionPopSize.t:$(n)/estimate=true'>
                      Transmission population size prior on tree t:$(n)
             </connect>
             <connect srcID='TransmissionOriginPrior.t:$(n)' targetID='prior' inputName='distribution'
-                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'>
-                     Transmission population size prior on tree t:$(n)
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(transmissionOrigin.t:$(n)) and transmissionOrigin.t:$(n)/estimate=true'>
+                     Transmission tree origin prior on tree t:$(n)
             </connect>
 
 
@@ -109,8 +110,8 @@ breath.distribution.GammaHazardFunction.scale
                      if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(blockcount.t:$(n)) and blockcount.t:$(n)/estimate=true'/>
             <connect srcID='transmissionPopSize.t:$(n)' targetID='state' inputName='stateNode'
                      if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(transmissionPopSize.t:$(n)) and transmissionPopSize.t:$(n)/estimate=true'/>
-            <connect srcID='transmissionDeltaStartTime.t:$(n)' targetID='state' inputName='stateNode'
-                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(transmissionDeltaStartTime.t:$(n)) and transmissionDeltaStartTime.t:$(n)/estimate=true'/>
+            <connect srcID='transmissionOrigin.t:$(n)' targetID='state' inputName='stateNode'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(transmissionOrigin.t:$(n)) and transmissionOrigin.t:$(n)/estimate=true'/>
 
             <connect srcID='transmissionInfectionMover.t:$(n)' targetID='mcmc' inputName='operator'
                      if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'>
@@ -124,9 +125,9 @@ breath.distribution.GammaHazardFunction.scale
                      if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(transmissionPopSize.t:$(n)) and transmissionPopSize.t:$(n)/estimate=true'>
                 	Scale population size of transmission tree t:$(n)
             </connect>
-            <connect srcID='transmissionDeltaStartTimeScaler.t:$(n)' targetID='mcmc' inputName='operator'
-                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(transmissionDeltaStartTime.t:$(n)) and transmissionDeltaStartTime.t:$(n)/estimate=true'>
-                  Scale delta start time (time from root to origin) of transmission tree t:$(n)
+            <connect srcID='transmissionOriginScaler.t:$(n)' targetID='mcmc' inputName='operator'
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(transmissionOrigin.t:$(n)) and transmissionOrigin.t:$(n)/estimate=true'>
+                	Scale origin of transmission tree t:$(n)
             </connect>
 
             <connect srcID='transmissionLikelihood.t:$(n)' targetID='tracelog' inputName='log'
@@ -134,9 +135,7 @@ breath.distribution.GammaHazardFunction.scale
             <connect srcID='transmissionPopSize.t:$(n)' targetID='tracelog' inputName='log'
                      if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and transmissionPopSize.t:$(n)/estimate=true'/>
             <connect srcID='transmissionOrigin.t:$(n)' targetID='tracelog' inputName='log'
-                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and transmissionDeltaStartTime.t:$(n)/estimate=true'/>
-            <connect srcID='transmissionDeltaStartTime.t:$(n)' targetID='tracelog' inputName='log'
-                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and transmissionDeltaStartTime.t:$(n)/estimate=true'/>
+                     if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n)) and inposterior(transmissionOrigin.t:$(n)) and transmissionOrigin.t:$(n)/estimate=true'/>
 
             <connect srcID='blockstart.t:$(n)' targetID='TreeWithMetaDataLogger.t:$(n)' inputName='metadata' 
                      if='inposterior(transmissionLikelihood.t:$(n)) and inposterior(Tree.t:$(n))'/>

@@ -4,7 +4,7 @@
     <!-- tree priors -->
     <mergewith point='treePriorTemplates'>
         <!-- TransmissionTreeLikelihood -->
-        <subtemplate id='Transmission' class='breath.distribution.TransmissionTreeLikelihood' mainid='transmissionLikelihood.t:$(n)' 
+        <subtemplate id='BREATH' class='breath.distribution.TransmissionTreeLikelihood' mainid='transmissionLikelihood.t:$(n)' 
 hmc="TransMissionUniformOperator/index/=Operators/BactrianNodeOperator/,
 TransMissionSubtreeSlide/index/=Operators/SubtreeSlide/,
 TransMissionNarrow/index/=Operators/Exchange/,

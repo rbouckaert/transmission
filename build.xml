@@ -106,6 +106,7 @@
       <javac target="${targetVersion}" source="${sourceVersion}"
              srcdir="${src}" destdir="${build}"
              includeantruntime="false" fork="yes">
+            <exclude name="transmission2/**"/>
             <classpath>
                 <pathelement path="${classpath}"/>
                 <fileset dir="${lib}" includes="**/*.jar"/>
@@ -178,13 +179,17 @@
         <mkdir dir="${pack}/lib"/>
         <mkdir dir="${pack}/doc"/>
 
-        <jar jarfile="${pack}/${fullName}.src.jar" basedir="${src}" />
+        <jar jarfile="${pack}/${fullName}.src.jar" basedir="${src}" >
+            <exclude name="transmission2/**"/>
+        </jar>
 
         <mkdir dir="${lib}" />
         <copy todir="${pack}/lib">
             <fileset dir="${lib}" includes="*.jar" />
         </copy>
-        <jar jarfile="${pack}/lib/${fullName}.jar" basedir="${build}" />
+        <jar jarfile="${pack}/lib/${fullName}.jar" basedir="${build}" >
+            <exclude name="transmission2/**"/>
+        </jar>
 
         <copy file="README.md" tofile="${pack}/README" />
         <copy file="COPYING" todir="${pack}" />

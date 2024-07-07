@@ -45,9 +45,9 @@ Tracer is used to summarise the posterior estimates of the various parameters sa
 
 ----
 
-# Practical: Transmission Tree Analysis
+# Practical: BREATH Tree Analysis
 
-We will set up an analysis in BEAUti using a transmission tree prior of a tuberculosis outbreak in Hamburg, Germany, earlier analysed in {% cite roetzer2013whole %}.
+We will set up an analysis in BEAUti using a BREATH tree prior of a tuberculosis outbreak in Hamburg, Germany, earlier analysed in {% cite roetzer2013whole %}.
 To reduce run-time, we only analyse a subset of 40 samples, then run BEAST and analyse the results. 
 We will be using the `BREATH` package, so make sure it is installed, like so:
 
@@ -104,20 +104,20 @@ The site model panel should look similar to this:
 </figure>
 
 We will leave the clock model to a strict clock. Because we use tip dates, the clock rate is estimated by default. 
-Next, we set up the transmission tree prior.
+Next, we set up the BREATH tree prior.
 
 > * Click the `Priors` panel.
-> * Change the default Yule Model for tree prior to `Transmission`.
+> * Change the default Yule Model for tree prior to `BREATH`.
 > * New priors appear for the block-count, block-start and end, transmission tree origin
 and population size. 
 > * Set the lower bound for population size to 0.1.
-> * Click on the triangle next to `Tree.t:roetzer40` to show the parameter so the `Transmission` tree likelihood.
+> * Click on the triangle next to `Tree.t:roetzer40` to show the parameter so the `BREATH` tree likelihood.
 > * Go to the population size prior (at the bottom), open the distribution by clicking the triangle next to the prior, and set the lower bound to 0.1 (this prevents the tree collapsing).
 
 <figure>
 	<a id="fig:BEAUti4"></a>
 	<img style="width:70%;" src="figures/BEAUti-priors.png" alt="">
-	<figcaption>Figure: Select the `Transmission` tree prior, and this is how the priors panel looks like.</figcaption>
+	<figcaption>Figure: Select the `BREATH` tree prior, and this is how the priors panel looks like.</figcaption>
 </figure>
 
 
@@ -125,11 +125,11 @@ and population size.
 	<a id="fig:BEAUti5"></a>
 	<img style="width:45%;" src="figures/BEAUti-priors1.png" alt="">
 	<img style="width:45%;" src="figures/BEAUti-priors2.png" alt="">
-	<figcaption>Figure: Shows all options of the transmission tree prior.</figcaption>
+	<figcaption>Figure: Shows all options of the BREATH tree prior.</figcaption>
 </figure>
 
 
-The transmission tree likelihood has the following components:
+The BREATH tree likelihood has the following components:
 * samplingHazard: determines the hazard of being sampled. It has a sampling probability (`C` in the priors tab) and a `shape` and `rate` parameter for a Gamma distribution that determine the time of sampling after a host got infected.
 * transmissionHazard: determines the hazard of transmitting an infection. It has an average number of transmissions `C` and a `shape` and `rate` parameter for a Gamma distribution that determine the time from infection to time of infecting another host. In general, the average transmission time should be larger than the average sampling time (so shape/rate of transmission should be larger than shape/rate of the sampling hazard).
 * endTime: time at which the study finished relative to the latest sample. So, if the units of time is years, and the study stopped collecting samples 3 months after the latest sample, it means the endTime is 1/4 year after the latest sample, and endTime=-0.25.
@@ -142,7 +142,7 @@ The two hazard functions probably need a bit of thought and knowledge to inform 
 
 ### Hyperpriors
 
-The transmission tree prior comes with four hyperpriors: block start, end and count and tranmission population size
+The BREATH tree prior comes with four hyperpriors: block start, end and count and tranmission population size
 
 * block start and end represent fractions on a branch, so should be in the interval from zero to 1 (and the associated parameters are bounded by these values). Be default, a uniform(0,1) prior is used. Unless you have good reasons to change, this can be left as is.
 * block counts represent how many infections take place in a block. 

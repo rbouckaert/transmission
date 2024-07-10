@@ -133,7 +133,8 @@ The BREATH tree likelihood has the following components:
 * samplingHazard: determines the hazard of being sampled. It has a sampling probability (`C` in the priors tab) and a `shape` and `rate` parameter for a Gamma distribution that determine the time of sampling after a host got infected.
 * transmissionHazard: determines the hazard of transmitting an infection. It has an average number of transmissions `C` and a `shape` and `rate` parameter for a Gamma distribution that determine the time from infection to time of infecting another host. In general, the average transmission time should be larger than the average sampling time (so shape/rate of transmission should be larger than shape/rate of the sampling hazard).
 * endTime: time at which the study finished relative to the latest sample. So, if the units of time is years, and the study stopped collecting samples 3 months after the latest sample, it means the endTime is 1/4 year after the latest sample, and endTime=-0.25.
-* deltaStartTime: time at which the study start till root of tree (optional, default: 0). 
+<!--* deltaStartTime: time at which the study start till root of tree (optional, default: 0). -->
+* origin: time at which the study start above the root of tree. Assumed to be at root if not specified.
 * allowTransmissionsAfterSampling: flag to indicate sampling does not affect the probability of onwards transmissions. If false, no onwards transmissions are allowed (not clear how this affects the unknown unknowns though). (optional, default: true)
 * includeCoalescent: flag for debugging that includes contribution from coalescent to posterior if true (default: true).
 

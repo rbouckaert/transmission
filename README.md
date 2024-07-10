@@ -3,3 +3,35 @@
 Bayesian Reconstruction and Evolutionary Analysis of Transmission Histories (BREATH) is a BEAST 2 package for inferring transmission trees.
 
 
+## Using BREATH
+
+See the [tutorial](https://github.com/rbouckaert/transmission/blob/main/doc/tutorial/README.md) on how to use BREATH.
+
+
+## Installing by hand
+
+Install [BEAST 2](http://beast2.org).
+
+Download [BREATH.v0.0.1.zip](https://github.com/rbouckaert/transmission/releases/download/v0.0.1/BREATH.v0.0.1.zip). 
+Then, create a BREATH subdirectory:
+
+```
+for Windows in Users\<YourName>\BEAST\2.7\BREATH
+for Mac in /Users/<YourName>\/Library/Application Support/BEAST/2.7/BREATH
+for Linux /home/<YourName>/.beast/2.7/BREATH
+```
+
+Here `<YourName>` is the username you use.
+Unzip the file [BREATH.v0.0.1.zip](https://github.com/rbouckaert/transmission/releases/download/v0.0.1/BREATH.v0.0.1.zip) in the newly created directory.
+
+
+## Build from code
+
+An alternative way to install is to build from the source code. 
+Frist, get code for beast2, BeastFX and this repository. Then run
+
+```
+ant install
+```
+
+to install the package.

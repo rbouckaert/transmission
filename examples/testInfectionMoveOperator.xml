@@ -31,7 +31,6 @@
         		        <parameter id="transmissionPopSize.t:dna" spec="parameter.RealParameter" name="popSize">1.0</parameter>
 		            </populationModel>
 		            <endTime  id="endTime.t:dna" spec="parameter.RealParameter" value="0"/>
-		            <lambda   id="lambda.t:dna" spec="parameter.RealParameter" value="4"/>
 		            <samplingHazard id="samplingHazard.t:dna" spec="breath.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.0"/>
 		            <transmissionHazard id="transmissionHazard.t:dna" spec="breath.distribution.GammaHazardFunction" shape="2.0" rate="10.0" C="1.5"/>
                 </distribution>

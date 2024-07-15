@@ -12,6 +12,7 @@ import org.apache.commons.math.MathException;
 import org.apache.commons.math.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 
+import beast.base.core.Citation;
 import beast.base.core.Description;
 import beast.base.core.Function;
 import beast.base.core.Input;
@@ -29,6 +30,9 @@ import beast.base.inference.parameter.RealParameter;
 import beast.base.util.Binomial;
 
 @Description("Likelihood of a transmission tree")
+@Citation(value="Caroline Colijn, Matthew David Hall, Remco Bouckaert.\n"
+		+ "Taking a BREATH (Bayesian Reconstruction and Evolutionary Analysis of Transmission Histories) to simultaneously infer phylogenetic and transmission trees for partially sampled outbreaks.\n"
+		+ "BioRxiv, 2024", year=2024, DOI="10.1101/2024.07.11.603095)")
 public class TransmissionTreeLikelihood extends TreeDistribution {
     final public Input<RealParameter> blockStartFractionInput = new Input<>("blockstart", "start of block in fraction of branch length", Validate.REQUIRED);
     final public Input<RealParameter> blockEndFractionInput = new Input<>("blockend", "end of block in fraction of branch length", Validate.REQUIRED);

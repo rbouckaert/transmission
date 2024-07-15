@@ -35,3 +35,10 @@ ant install
 ```
 
 to install the package.
+
+## Reference
+
+Caroline Colijn, Matthew David Hall, Remco Bouckaert.
+Taking a BREATH (Bayesian Reconstruction and Evolutionary Analysis of Transmission Histories) to simultaneously infer phylogenetic and transmission trees for partially sampled outbreaks.
+BioRxiv, 2024
+[doi:10.1101/2024.07.11.603095](https://doi.org/10.1101/2024.07.11.603095)

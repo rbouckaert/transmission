@@ -54,6 +54,7 @@ We will be using the `BREATH` package, so make sure it is installed, like so:
 > * Start BEAUti
 > * Click to the `File => Manage packages` menu item.
 > * Select `BREATH` in the list of packages and the click `Install` button.
+If `BREATH` is not in the list of packages, you must add a package repository first likse so: in the package manager, click `Package repositories` button, then click `Add URL` in the window that pops up, where you can put `https://raw.githubusercontent.com/CompEvol/CBAN/master/packages-extra-2.7.xml` in the field. Then return to the package manager window where the `BREATH` package should appear.
 > * Close BEAUti -- it needs to restart to pick up the new packages.
 
 ## Set up in BEAUti

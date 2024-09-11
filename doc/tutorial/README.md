@@ -64,7 +64,7 @@ If `BREATH` is not in the list of packages, you must add a package repository fi
 
 A dialog is shown where you can select a file containing a tree in NEXUS format.
 
-> Select the file `roetzer40.tree` that comes with this tutorial in the data section.
+> Select the file `roetzer40.nex` that comes with this tutorial in the data section.
 
 <figure>
 	<a id="fig:BEAUti1"></a>

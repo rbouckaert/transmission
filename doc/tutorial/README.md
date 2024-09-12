@@ -111,6 +111,7 @@ Next, we set up the BREATH tree prior.
 > * Change the default Yule Model for tree prior to `BREATH`.
 > * New priors appear for the block-count, block-start and end, transmission tree origin
 and population size. 
+> * Set the start value for origin to 10: click the `Initial` button for the `transmissionOrigin.t:roetzer40` parameter, and change the `value` entry from 10000 to 10, then click the `OK` button.
 > * Set the lower bound for population size to 0.1.
 > * Click on the triangle next to `Tree.t:roetzer40` to show the parameter so the `BREATH` tree likelihood.
 > * Go to the population size prior (at the bottom), open the distribution by clicking the triangle next to the prior, and set the lower bound to 0.1 (this prevents the tree collapsing).

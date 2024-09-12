@@ -1,16 +1,15 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.base.evolution.alignment:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="BEAST.base v2.7.7:transmission v0.0.1" version="2.7">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.base.evolution.alignment:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="BEAST.base v2.7.7:BREATH v0.0.1" version="2.7">
 
     <data
 id="roetzer40"
 spec="Alignment"
 name="alignment">
         <sequence id="seq_2:2007-11-01" spec="Sequence" taxon="2:2007-11-01" totalcount="4" value="GCACCCATTCCCGCCTAGAGATCACCGTCCGTCGGTCTCACGACCCCGCGGGCCCCAACACGGTGGGCGGCGGGCACGGACGCGA"/>
-        <sequence id="seq_4:2007-04-01" spec="Sequence" taxon="4:2007-04-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACCGTCCGGCAGTCTCACGACGCCGCGGGCCCCAACACGGTGGGGGGCGGGCACGGACGCGA"/>
-        <sequence id="seq_5:2008-07-01" spec="Sequence" taxon="5:2008-07-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACTGTCCGTCGGTCTCACGACCCCGCGGGCCCCAACACGGTGGGGGGCGGGCACAGACGCGA"/>
         <sequence id="seq_45:2004-10-01" spec="Sequence" taxon="45:2004-10-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACCGTCCGGCGGTCTCACGACGCCGCGGGCCCCAACACGGTGGGGGGCGGGCACGGACGCGA"/>
         <sequence id="seq_47:2005-09-01" spec="Sequence" taxon="47:2005-09-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACCGTCCGGCGGTCTCACGACGCCGCGGGCCCCAACACGGTGGGGGGCGGGCACGGACGCGA"/>
         <sequence id="seq_48:2008-04-01" spec="Sequence" taxon="48:2008-04-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACCGTCCGGCGGTCTCACGACGCCGCGGGCCCCAACATCGTGGGGGGCGGGCACGGACGCGG"/>
         <sequence id="seq_49:2008-01-01" spec="Sequence" taxon="49:2008-01-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACCGTCCGTCGGTCTCACGACCCCGCGGGCCCCAACACGGTGGGGGGCGGGCAAGGACGCGA"/>
+        <sequence id="seq_4:2007-04-01" spec="Sequence" taxon="4:2007-04-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACCGTCCGGCAGTCTCACGACGCCGCGGGCCCCAACACGGTGGGGGGCGGGCACGGACGCGA"/>
         <sequence id="seq_50:2008-03-01" spec="Sequence" taxon="50:2008-03-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACCGTCCGTCGGTCTCACGACCCCGCGGGCCCCAACACGGTGGGGGGCGGGCACGGACGCGA"/>
         <sequence id="seq_51:2008-06-01" spec="Sequence" taxon="51:2008-06-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACTGTCCGTCGGTCTCACGACCCCGCGGGCCCCAACACGGTGGGGGGCGGGCACAGACGCGA"/>
         <sequence id="seq_52:2008-08-01" spec="Sequence" taxon="52:2008-08-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACTGTCCGTCGGTCTCACGACCCCACGGGCCCCAACACGGTGGGGGGCGGGCACAGACGCGA"/>
@@ -18,6 +17,7 @@ name="alignment">
         <sequence id="seq_54:2009-02-01" spec="Sequence" taxon="54:2009-02-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACCGTCCGGCGGTCTCACGACGTCGCGGGCCCCAACACGGTGGGGGGCGGGCACGGACGCGA"/>
         <sequence id="seq_55:2009-03-01" spec="Sequence" taxon="55:2009-03-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACTGTCCGTCGGTCTCACGACCCCGCGGGCCCCAACACGGTGGGGGGCGGGCACAGACGCGA"/>
         <sequence id="seq_57:2009-08-01" spec="Sequence" taxon="57:2009-08-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACTGTCCGTCGGTCTCACGACCCCGCGGGCCCCAACACGGTGGGGGGCGGGCACAGACGCGA"/>
+        <sequence id="seq_5:2008-07-01" spec="Sequence" taxon="5:2008-07-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACTGTCCGTCGGTCTCACGACCCCGCGGGCCCCAACACGGTGGGGGGCGGGCACAGACGCGA"/>
         <sequence id="seq_60:2006-11-01" spec="Sequence" taxon="60:2006-11-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACCGTCCGGCGGTCTCACGACGCCGCGGGCCCCAACACGGTGGGGGGCGGGCACGGACGCGA"/>
         <sequence id="seq_62:2006-06-01" spec="Sequence" taxon="62:2006-06-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACCGTCCGGCGGTCTCACGACGCCGCGGGCCCCAACACGGTGGGGGGCGGGCACGGACGCGA"/>
         <sequence id="seq_63:2006-07-01" spec="Sequence" taxon="63:2006-07-01" totalcount="4" value="GCACCCATTCCCGCCTGGAGATCACCGTCCGGCAGTCTCACGACGCCGCGGGCCCTAACACGGTGGGGGGCGGGCACGGACGCGA"/>
@@ -77,15 +77,15 @@ name="alignment">
                 <taxonset idref="TaxonSet.roetzer40"/>
             </tree>
             <parameter id="clockRate.c:roetzer40" spec="parameter.RealParameter" lower="0.0" name="stateNode">1.0</parameter>
-            <parameter id="proportionInvariant.s:roetzer40" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="1.0">0.1</parameter>
             <parameter id="gammaShape.s:roetzer40" spec="parameter.RealParameter" lower="0.1" name="stateNode">1.0</parameter>
             <parameter id="kappa.s:roetzer40" spec="parameter.RealParameter" lower="0.0" name="stateNode">2.0</parameter>
             <parameter id="freqParameter.s:roetzer40" spec="parameter.RealParameter" dimension="4" lower="0.0" name="stateNode" upper="1.0">0.25</parameter>
+            <parameter id="proportionInvariant.s:roetzer40" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="1.0">0.1</parameter>
             <parameter id="blockstart.t:roetzer40" spec="parameter.RealParameter" dimension="78" lower="0.0" name="stateNode" upper="1.0">0.5</parameter>
             <parameter id="blockend.t:roetzer40" spec="parameter.RealParameter" dimension="78" lower="0.0" name="stateNode" upper="1.0">0.5</parameter>
             <stateNode id="blockcount.t:roetzer40" spec="parameter.IntegerParameter" dimension="79" lower="-1" upper="100000">0</stateNode>
-            <parameter id="transmissionPopSize.t:roetzer40" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="Infinity">0.5</parameter>
-            <parameter id="transmissionDeltaStartTime.t:roetzer40" spec="parameter.RealParameter" lower="0.0" name="stateNode">1.0</parameter>
+            <parameter id="transmissionPopSize.t:roetzer40" spec="parameter.RealParameter" lower="0.1" name="stateNode" upper="Infinity">0.5</parameter>
+            <parameter id="transmissionOrigin.t:roetzer40" spec="parameter.RealParameter" name="stateNode">10.0</parameter>
         </state>
         <init id="RandomTree.t:roetzer40" spec="RandomTree" estimate="false" initial="@Tree.t:roetzer40" taxa="@roetzer40">
             <populationModel id="ConstantPopulation0.t:roetzer40" spec="ConstantPopulation">
@@ -94,7 +94,7 @@ name="alignment">
         </init>
         <distribution id="posterior" spec="CompoundDistribution">
             <distribution id="prior" spec="CompoundDistribution">
-                <distribution id="transmissionLikelihood.t:roetzer40" spec="breath.distribution.TransmissionTreeLikelihood" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" deltaStartTime="@transmissionDeltaStartTime.t:roetzer40" tree="@Tree.t:roetzer40">
+                <distribution id="transmissionLikelihood.t:roetzer40" spec="breath.distribution.TransmissionTreeLikelihood" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" origin="@transmissionOrigin.t:roetzer40" tree="@Tree.t:roetzer40">
                     <populationModel id="ConstantTransmissionPopulation.t:roetzer40" spec="ConstantPopulation" popSize="@transmissionPopSize.t:roetzer40"/>
                     <parameter id="endTime.t:roetzer40" spec="parameter.RealParameter" name="endTime">-1.0</parameter>
                     <samplingHazard id="samplingHazard.t:roetzer40" spec="breath.distribution.GammaHazardFunction">
@@ -139,12 +139,11 @@ name="alignment">
                 <prior id="PropInvariantPrior.s:roetzer40" name="distribution" x="@proportionInvariant.s:roetzer40">
                     <Uniform id="Uniform.2" name="distr"/>
                 </prior>
-                <prior id="TransmissionOriginPrior.t:roetzer40" name="distribution">
-                    <x id="transmissionOrigin.t:roetzer40" spec="breath.util.OriginCalculator" deltaStartTime="@transmissionDeltaStartTime.t:roetzer40" tree="@Tree.t:roetzer40"/>
-                    <Uniform id="Uniform.7" name="distr" upper="Infinity"/>
+                <prior id="TransmissionOriginPrior.t:roetzer40" name="distribution" x="@transmissionOrigin.t:roetzer40">
+                    <Uniform id="Uniform.7" lower="0.1" name="distr" upper="Infinity"/>
                 </prior>
                 <prior id="TransmissionPopSizePrior.t:roetzer40" name="distribution" x="@transmissionPopSize.t:roetzer40">
-                    <Uniform id="Uniform.6" lower="0.1" name="distr" upper="Infinity"/>
+                    <Uniform id="Uniform.6" name="distr" upper="Infinity"/>
                 </prior>
             </distribution>
             <distribution id="likelihood" spec="CompoundDistribution" useThreads="true">
@@ -167,9 +166,9 @@ name="alignment">
                 </transformations>
                 <transformations id="AVMNLogTransform.roetzer40" spec="operator.kernel.Transform$LogTransform">
                     <f idref="clockRate.c:roetzer40"/>
-                    <f idref="proportionInvariant.s:roetzer40"/>
                     <f idref="gammaShape.s:roetzer40"/>
                     <f idref="kappa.s:roetzer40"/>
+                    <f idref="proportionInvariant.s:roetzer40"/>
                 </transformations>
                 <transformations id="AVMNNoTransform.roetzer40" spec="operator.kernel.Transform$NoTransform">
                     <f idref="Tree.t:roetzer40"/>
@@ -185,11 +184,6 @@ name="alignment">
                 <up idref="clockRate.c:roetzer40"/>
                 <down idref="Tree.t:roetzer40"/>
             </operator>
-        </operator>
-        <operator id="proportionInvariantScaler.s:roetzer40" spec="AdaptableOperatorSampler" weight="0.05">
-            <parameter idref="proportionInvariant.s:roetzer40"/>
-            <operator idref="AVMNOperator.roetzer40"/>
-            <operator id="proportionInvariantScalerX.s:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@proportionInvariant.s:roetzer40" scaleFactor="0.5" upper="10.0" weight="0.1"/>
         </operator>
         <operator id="gammaShapeScaler.s:roetzer40" spec="AdaptableOperatorSampler" weight="0.05">
             <parameter idref="gammaShape.s:roetzer40"/>
@@ -208,6 +202,11 @@ name="alignment">
                 <parameter idref="freqParameter.s:roetzer40"/>
             </operator>
         </operator>
+        <operator id="proportionInvariantScaler.s:roetzer40" spec="AdaptableOperatorSampler" weight="0.05">
+            <parameter idref="proportionInvariant.s:roetzer40"/>
+            <operator idref="AVMNOperator.roetzer40"/>
+            <operator id="proportionInvariantScalerX.s:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@proportionInvariant.s:roetzer40" scaleFactor="0.5" upper="10.0" weight="0.1"/>
+        </operator>
         <operator id="transmissionLikelihoodBICEPSEpochTop.t:roetzer40" spec="EpochFlexOperator" scaleFactor="0.1" tree="@Tree.t:roetzer40" weight="2.0"/>
         <operator id="transmissionLikelihoodBICEPSEpochAll.t:roetzer40" spec="EpochFlexOperator" fromOldestTipOnly="false" scaleFactor="0.1" tree="@Tree.t:roetzer40" weight="2.0"/>
         <operator id="transmissionLikelihoodBICEPSTreeFlex.t:roetzer40" spec="TreeStretchOperator" scaleFactor="0.01" tree="@Tree.t:roetzer40" weight="2.0"/>
@@ -220,7 +219,7 @@ name="alignment">
         <operator id="transmissionInfectionMover.t:roetzer40" spec="breath.operator.InfectionMover" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" likelihood="@transmissionLikelihood.t:roetzer40" weight="50.0"/>
         <operator id="transmissionBlockOperator.t:roetzer40" spec="breath.operator.BlockOperator" blockcount="@blockcount.t:roetzer40" blockend="@blockend.t:roetzer40" blockstart="@blockstart.t:roetzer40" tree="@Tree.t:roetzer40" weight="50.0"/>
         <operator id="transmissionPopSizeScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionPopSize.t:roetzer40" scaleFactor="0.1" upper="10.0" weight="5.0"/>
-        <operator id="transmissionDeltaStartTimeScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionDeltaStartTime.t:roetzer40" scaleFactor="0.1" upper="10.0" weight="0.05"/>
+        <operator id="transmissionOriginScaler.t:roetzer40" spec="kernel.BactrianScaleOperator" parameter="@transmissionOrigin.t:roetzer40" scaleFactor="0.1" upper="10.0" weight="0.5"/>
         <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="2000" model="@posterior" sanitiseHeaders="true" sort="smart">
             <log idref="posterior"/>
             <log idref="likelihood"/>
@@ -228,14 +227,13 @@ name="alignment">
             <log idref="treeLikelihood.roetzer40"/>
             <log id="TreeHeight.t:roetzer40" spec="beast.base.evolution.tree.TreeStatLogger" tree="@Tree.t:roetzer40"/>
             <log idref="clockRate.c:roetzer40"/>
-            <log idref="proportionInvariant.s:roetzer40"/>
             <log idref="gammaShape.s:roetzer40"/>
             <log idref="kappa.s:roetzer40"/>
             <log idref="freqParameter.s:roetzer40"/>
+            <log idref="proportionInvariant.s:roetzer40"/>
             <log idref="transmissionLikelihood.t:roetzer40"/>
             <log idref="transmissionPopSize.t:roetzer40"/>
             <log idref="transmissionOrigin.t:roetzer40"/>
-            <log idref="transmissionDeltaStartTime.t:roetzer40"/>
         </logger>
         <logger id="screenlog" spec="Logger" logEvery="100000">
             <log idref="posterior"/>

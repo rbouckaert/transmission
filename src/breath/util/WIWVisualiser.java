@@ -246,6 +246,13 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 		
 		if (suppressSingletonInput.get()) {
 			Log.warning(suppressedCount + " nodes not shown since they are singletons");
+			if (suppressedCount == n) {
+				Log.warning("\nSince all nodes have been removed, no who-infected-who network will be created.");
+				Log.warning("\nTo remedy this:\n"
+						+ "o Try reducing the threshold value.");
+				Log.warning("o Check the parameters of the hazard functions to see whether they scale well with the size of the tree");
+				return;
+			}
 		}
 		
 		// add edges

@@ -32,6 +32,24 @@
     <property name="test-reports" location="test-reports"/>
     <property name="dist" location="dist"/>
     <property name="pack" location="${dist}/package"/>
+    <property name="beast2path" location="../beast2"/>
+    <property name="libBeast2" location="${beast2path}/lib" />
+    <property name="srcBeast2" location="${beast2path}/src" />
+    <property name="beast2classpath" location="${beast2path}/build" />
+
+
+	<path id="classpath">
+        <pathelement path="${build}"/>
+                <fileset dir="${libBeast2}" includes="junit/junit-platform-console-standalone-1.8.2.jar"/>
+                <fileset dir="${libBeast2}" includes="commons-math3-3.6.1.jar"/>
+        <pathelement path="${beast2classpath}"/>
+                <fileset dir="${beast2path}/lib" includes="jam.jar"/>
+                <fileset dir="${beast2path}/lib" includes="beagle.jar"/>
+                <fileset dir="${beast2path}/lib" includes="fest.jar"/>
+                <fileset dir="${beast2path}/lib" includes="colt.jar"/>
+        <pathelement path="../BeastFX/build"/>
+    </path>
+
 
     <!-- Prepare for compilation -->
     <target name="init">
@@ -112,6 +130,7 @@
                 <fileset dir="${lib}" includes="**/*.jar"/>
                 <fileset dir="${beast-source-root}/lib" includes="**/*.jar"/>
                 <pathelement path="${build-beast}"/>
+		        <pathelement path="../BeastFX/build"/>
             </classpath>
         </javac>
     </target>

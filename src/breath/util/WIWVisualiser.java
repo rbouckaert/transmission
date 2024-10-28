@@ -1,5 +1,6 @@
 package breath.util;
 
+
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -10,7 +11,6 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -249,7 +249,8 @@ public class WIWVisualiser extends beast.base.inference.Runnable {
 			if (suppressedCount == n) {
 				Log.warning("\nSince all nodes have been removed, no who-infected-who network will be created.");
 				Log.warning("\nTo remedy this:\n"
-						+ "o Try reducing the threshold value.");
+						+ "o Make sure the partition name is correct.\n"
+						+ "o Try reducing the threshold value.\n");
 				Log.warning("o Check the parameters of the hazard functions to see whether they scale well with the size of the tree");
 				return;
 			}

@@ -92,19 +92,21 @@ public class GammaHazardFunction extends HazardFunction {
 			samplingDist.setBeta(scale.getArrayValue());
 		}
 		
-		try {
-			double max = samplingDist.inverseCumulativeProbability(0.9999);
-			for (int i = 1; i < 999; i++) {
-				x[i] = i * max / 999;
-				y[i] = samplingDist.cumulativeProbability(x[i]);
+		if (approx) {
+			try {
+				double max = samplingDist.inverseCumulativeProbability(0.9999);
+				for (int i = 1; i < 999; i++) {
+					x[i] = i * max / 999;
+					y[i] = samplingDist.cumulativeProbability(x[i]);
+				}
+				x[999] = 1e100;
+				y[999] = 1.0;
+			} catch (MathException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			x[999] = 1e100;
-			y[999] = 1.0;
-		} catch (MathException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
-		
+	
 		needsupdate = false;
 	}
 
@@ -152,13 +154,16 @@ public class GammaHazardFunction extends HazardFunction {
 	
 	
 	public static void main(String[] args) throws MathException {
-		GammaHazardFunction h = new GammaHazardFunction();
-		h.initByName("shape","10.0","rate","6.5","C","0.75");
+		// test difference between
+		GammaHazardFunction h0 = new GammaHazardFunction();
+		h0.initByName("shape","10.0","rate","6.5","C","0.75");
+		GammaHazardFunction h1 = new GammaHazardFunction();
+		h1.initByName("shape","10.0","rate","6.5","C","0.75","approx", true);
 		double x = 0;
 		while (x < 10) {
-			double y1 = -h.logS(x,0.0)/h.constant.getArrayValue();
-			double y2 = h.samplingDist.cumulativeProbability(x);
-			System.err.println(y1 + " " + y2 + " " + (y2-y1));
+			double y1 = h1.logS(x, 0);
+			double y0 = h0.logS(x , 0);
+			System.err.println(y1 + " " + 0 + " " + (y0-y1));
 			x += 0.01;
 		}
 	}

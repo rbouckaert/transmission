@@ -40,8 +40,9 @@ import javafx.scene.layout.HBox;
 
 @Description("Calculate coverage of who infected who")
 public class InfectedByCoverageCalculator extends Runnable {
-	public Input<LogFile> truthInput = new Input<>("truth", "trace file with true infection information", Validate.REQUIRED);
-	public Input<File> logFilePrefixInput = new Input<>("logFilePrefix", "log file name without the number and '.log' missing. It is assumed there are as many log files as there are entries in the truth file", Validate.REQUIRED);
+	final public Input<LogFile> truthInput = new Input<>("truth", "trace file with true infection information", Validate.REQUIRED);
+	final public Input<Integer> skipLogLinesInput = new Input<>("skip", "numer of true log file lines to skip", 1);
+	final public Input<File> logFilePrefixInput = new Input<>("logFilePrefix", "log file name without the number and '.log' missing. It is assumed there are as many log files as there are entries in the truth file", Validate.REQUIRED);
 	final public Input<OutFile> outputInput = new Input<>("out", "output file, or stdout if not specified", new OutFile("[[none]]"));
 	final public Input<Integer> burnInPercentageInput = new Input<>("burnin", "percentage of trees to used as burn-in (and will be ignored)", 10);	
 	final public Input<Double> coverageInput = new Input<>("coverage", "percentage of coverage to be tested against (between 0 and 100, default 95)", 95.0);	
@@ -89,7 +90,12 @@ public class InfectedByCoverageCalculator extends Runnable {
 		int [] totals = new int [truebins.length];
 		boolean includeUnsampled = includeUnsampledInput.get();
 		
-		for (int i = 0; i < trueTrace.getTrace(0).length; i++) {
+		int trueOffset = 0;
+		if (tag != null) {
+			trueOffset = trueTrace.indexof(tag+".1") - 1;
+		}
+		
+		for (int i = 0; i < trueTrace.getTrace(0).length - skipLogLinesInput.get(); i++) {
 			String filename = logFilePrefixInput.get().getPath() + i + ".log";
 			LogAnalyser trace = new LogAnalyser(filename, burnInPercentageInput.get(), true, false);
 			if (i % 10 == 0) {
@@ -106,7 +112,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 			for (int j = 1; j <= n; j++) {
 				// get true source value
 				int trueSource = 0;
-				trueSource = (n + 1 + (int)(double)trueTrace.getTrace(j)[i]) % n;
+				trueSource = (n + 1 + (int)(double)trueTrace.getTrace(trueOffset+j)[i + skipLogLinesInput.get()]) % n;
 				
 				// collect info from trace
 	        	double [] infectedBy = new double[n+1];

@@ -1,10 +1,11 @@
 package breath.distribution;
 
+
 import org.apache.commons.math.MathException;
 
-import beast.base.core.BEASTObject;
+import beast.base.inference.CalculationNode;
 
-abstract public  class HazardFunction extends BEASTObject {
+abstract public  class HazardFunction extends CalculationNode {
 
 	@Override
 	public void initAndValidate() {

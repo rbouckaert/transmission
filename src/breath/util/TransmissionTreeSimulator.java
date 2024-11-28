@@ -54,7 +54,7 @@ public class TransmissionTreeSimulator extends Runnable {
 			"constant multiplier of the transmission intensity function", new Constant("1.5"));
 
 	final public Input<OutFile> outputInput = new Input<>("out","output file. Print to stdout if not specified");
-	final public Input<OutFile> traceOutputInput = new Input<>("trace", "trace output file, or stdout if not specified", new OutFile("[[none]]"));
+	final public Input<OutFile> traceOutputInput = new Input<>("trace", "trace output file with end time, tree heights and tree lengths, or stdout if not specified", new OutFile("[[none]]"));
 	final public Input<Long> seedInput = new Input<>("seed","random number seed used to initialise the random number generator");
 	final public Input<Integer> maxAttemptsInput = new Input<>("maxAttempts",
 			"maximum number of attempts to generate coalescent sub-trees", 1000);

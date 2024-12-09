@@ -91,7 +91,8 @@ public class TransmissionTreeSimulator extends Runnable {
 			traceout = new PrintStream(traceOutputInput.get());
 		}
     	traceout.print("Sample\t");
-    	if (true && taxonCount > 0) {
+    	boolean printTaxaInTrace = false;
+    	if (printTaxaInTrace && taxonCount > 0) {
     		for (int i = 0; i < taxonCount; i++) {
     			traceout.print("t" + format(i+1) + "\t");
     		}
@@ -149,7 +150,7 @@ public class TransmissionTreeSimulator extends Runnable {
 	    	traceout.print(i +"\t");
 	    	
 
-			if (false && taxonCount > 0) {
+			if (printTaxaInTrace && taxonCount > 0) {
 				TreeParser tree = new TreeParser(newick);
 				IntegerParameter blockCount = new IntegerParameter();
 				blockCount.initByName("dimension", taxonCount*2+1, "value", "-1");

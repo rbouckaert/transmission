@@ -40,15 +40,15 @@ public class TransmissionTreeStats extends Runnable {
 		Tree tree = trees.next();
 		int leafNodeCount = tree.getLeafNodeCount();
 		
-		PrintStream outTimeTillTransmission = new PrintStream(outputDirInput.get()+ "/timeTillTransmission.dat");
-		outTimeTillTransmission.print("Sample\t");
+		PrintStream timeTillSampledHostTransmission = new PrintStream(outputDirInput.get()+ "/timeTillSampledHostTransmission.dat");
+		timeTillSampledHostTransmission.print("Sample\t");
 		for (int i = 0; i < leafNodeCount; i++) {
-			outTimeTillTransmission.print(tree.getNode(i).getID() + "\t");
+			timeTillSampledHostTransmission.print(tree.getNode(i).getID() + "\t");
 		}
 		for (int i = 0; i < leafNodeCount; i++) {
-			outTimeTillTransmission.print("2nd" + tree.getNode(i).getID() + "\t");
+			timeTillSampledHostTransmission.print("2nd" + tree.getNode(i).getID() + "\t");
 		}
-		outTimeTillTransmission.print("\n");
+		timeTillSampledHostTransmission.print("\n");
 		PrintStream outTimeTillSampling = new PrintStream(outputDirInput.get()+ "/timeTillSampling.dat");
 		outTimeTillSampling.print("Sample\t");
 		for (int i = 0; i < leafNodeCount; i++) {
@@ -56,6 +56,11 @@ public class TransmissionTreeStats extends Runnable {
 		}
 		outTimeTillSampling.print("\n");
 
+		PrintStream outTimeTillAllTransmissions = new PrintStream(outputDirInput.get()+ "/timeTillAllTransmissions.dat");
+		outTimeTillAllTransmissions.print("Sample\ttimeTillAllTransmissions\n");
+		int sampleOutTimeTillAllTransmissions = 0;
+		
+		
 		trees.reset();
 
 		int sampleCount = 0;
@@ -159,23 +164,47 @@ public class TransmissionTreeStats extends Runnable {
 					
 				}
 			}
+
 			
-			outTimeTillTransmission.print(sampleCount + "\t");
+			for (int i = 0; i < nodes.length; i++) {
+				Node node = nodes[i];
+				int host = colourAtBase[node.getNr()];
+				double infectionTimeOfHost = -1;
+				if (!node.isRoot() && colourAtBase[node.getParent().getNr()] != host) {
+					infectionTimeOfHost = node.getHeight() + (node.getParent().getHeight() - node.getHeight()) * blockStart[i];
+				} else {
+					// node = root
+					infectionTimeOfHost = node.getHeight();
+				}
+				if (/*node.isRoot() ||*/ !node.isRoot() && colourAtBase[node.getParent().getNr()] != host) {
+					for (int j = 0; j < nodes.length-1; j++) {
+						if (colourAtBase[j] != host && colourAtBase[nodes[j].getParent().getNr()] == host) {
+							double timeOfInfection = nodes[j].getHeight() + (nodes[j].getParent().getHeight() - nodes[j].getHeight()) * blockEnd[j];
+							double timeToInfection = infectionTimeOfHost - timeOfInfection;
+							outTimeTillAllTransmissions.println(sampleOutTimeTillAllTransmissions + "\t" + timeToInfection);
+							sampleOutTimeTillAllTransmissions++;	
+						}
+					}
+				}
+			}
+			
+			
+			timeTillSampledHostTransmission.print(sampleCount + "\t");
 			for (int i = 0; i < leafNodeCount; i++) {
 				if (firstInfecteeTimeByHost[i] > 0) {
-					outTimeTillTransmission.print((infectionTimeHost[i] - firstInfecteeTimeByHost[i]) + "\t");
+					timeTillSampledHostTransmission.print((infectionTimeHost[i] - firstInfecteeTimeByHost[i]) + "\t");
 				} else {
-					outTimeTillTransmission.print("-1\t");
+					timeTillSampledHostTransmission.print("-1\t");
 				}
 			}
 			for (int i = 0; i < leafNodeCount; i++) {
 				if (secondInfecteeTimeByHost[i] > 0) {
-					outTimeTillTransmission.print((infectionTimeHost[i] - secondInfecteeTimeByHost[i]) + "\t");
+					timeTillSampledHostTransmission.print((infectionTimeHost[i] - secondInfecteeTimeByHost[i]) + "\t");
 				} else {
-					outTimeTillTransmission.print("-1\t");
+					timeTillSampledHostTransmission.print("-1\t");
 				}
 			}
-			outTimeTillTransmission.println();
+			timeTillSampledHostTransmission.println();
 
 			
 			int maxBlockCountInTree = 0;
@@ -200,8 +229,10 @@ public class TransmissionTreeStats extends Runnable {
 		Log.info("average unsampled hosts per tree = " + f.format((leafTransmissionCount+internalTransmissionCount) / sampleCount - (leafNodeCount-1)));
 		Log.info("average maximum block count = " + f.format(maxBlockCount / sampleCount));
 		
-		outTimeTillTransmission.close();
+		timeTillSampledHostTransmission.close();
 		outTimeTillSampling.close();
+		outTimeTillAllTransmissions.close();
+		Log.warning("Done");
 	}
 
 	public static void main(String[] args) throws Exception {

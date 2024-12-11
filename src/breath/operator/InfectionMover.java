@@ -141,14 +141,18 @@ public class InfectionMover extends Operator {
 					return;
 				}
 				
-				// shrink the block
-				if (Randomizer.nextBoolean()) {
-					double newBlockStartFraction = blockStartFraction.getValue(nodeNr) + Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) -blockStartFraction.getValue(nodeNr));
-					blockStartFraction.setValue(nodeNr, newBlockStartFraction);
-				} else {
-					double newBlockEndFraction = blockEndFraction.getValue(nodeNr) - Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) - blockStartFraction.getValue(nodeNr));
-					blockEndFraction.setValue(nodeNr, newBlockEndFraction);						
-				}
+				// shrink the block if it is on a boundary
+				// which is just as well as positions 1 and 2
+				//if (k == -1 || k == -2) { // blockCount.getValue(node.getNr()) - k == 1) {
+				//	if (Randomizer.nextBoolean()) {
+					if (k == -1) {
+						double newBlockStartFraction = blockStartFraction.getValue(nodeNr) + Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) -blockStartFraction.getValue(nodeNr));
+						blockStartFraction.setValue(nodeNr, newBlockStartFraction);
+					} else if (k == -2) {
+						double newBlockEndFraction = blockEndFraction.getValue(nodeNr) - Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) - blockStartFraction.getValue(nodeNr));
+						blockEndFraction.setValue(nodeNr, newBlockEndFraction);						
+					}
+				//}
 				return;
 			}
 			

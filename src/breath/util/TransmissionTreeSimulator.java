@@ -97,7 +97,7 @@ public class TransmissionTreeSimulator extends Runnable {
     			traceout.print("t" + format(i+1) + "\t");
     		}
     	}
-    	traceout.println("endTime\tTree.height\tTree.treeLength");
+    	traceout.println("endTime\tTree.height\tTree.treeLength\torigin");
 		
     	
     	Map<Integer, Integer> taxonCounts = new HashMap<>();
@@ -172,7 +172,8 @@ public class TransmissionTreeSimulator extends Runnable {
 	    			traceout.printf(infectedBy[j] + "\t");
 	    		}
 			}
-	    	traceout.println((-h) + "\t" + (root.getHeight() - h) + "\t" + length(root));
+			double height = (root.getHeight() - h);
+	    	traceout.println((-h) + "\t" + height + "\t" + length(root) + "\t" + (endTimeInput.get().getArrayValue()-h));
 			
 		}
 		System.err.println();

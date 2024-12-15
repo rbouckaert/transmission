@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -93,6 +94,13 @@ public class InfectedByCoverageCalculator extends Runnable {
 		int trueOffset = 0;
 		if (tag != null) {
 			trueOffset = trueTrace.indexof(tag+".1") - 1;
+			if (trueOffset == -2) {
+				trueOffset = 0;
+				List<String> labels = trueTrace.getLabels();
+				while (trueOffset < labels.size() && !labels.get(trueOffset).startsWith(tag)) {
+					trueOffset++;
+				}
+			}
 		}
 		
 		for (int i = 0; i < trueTrace.getTrace(0).length - skipLogLinesInput.get(); i++) {

@@ -145,10 +145,129 @@ public class BlockOperatorTest {
 	}
 
 
+	// Test that sampling block boundaries gives the same distribution as 
+	// placing two random samples on the unit interval and sorting them
+	private void test2() throws IOException {
+		PrintStream out = new PrintStream("/tmp/BlockOperatorTest.log");
+		out.println("Sample\tBlockStart\tBlockEnd\t");
+		int N = 10000;
+		for (int i = 0; i < N; i++) {
+			double x1 = Randomizer.nextDouble();
+			double x2 = Randomizer.nextDouble();
+			if (x1 > x2) {
+				double tmp = x1; x1 = x2; x2 = tmp;
+			}
+			out.println(i + "\t" + x1 + "\t" + x2);
+		}
+		out.close();
+		
+		out = new PrintStream("/tmp/BlockOperatorTest2.log");
+		out.println("Sample\tBlockStart\tBlockEnd\t");
+		double blockStart = 0.5;
+		double blockEnd = 0.5;
+		for (int i = 0; i < N; i++) {
+			switch (Randomizer.nextInt(2)) {
+			case 0:
+				blockStart = Randomizer.nextDouble() * blockEnd;
+				break;
+			case 1:
+				blockEnd = 1 - Randomizer.nextDouble() * (1 - blockStart);
+				break;
+			}
+			out.println(i + "\t" + blockStart + "\t" + blockEnd);
+		}
+		out.close();
+	}
 
+	// Test that switching between 1 and 2 transmissions equates 
+	// Bayesian stochastic variable selection
+	private void test3() throws IOException {
+		PrintStream out = new PrintStream("/tmp/BlockOperatorTest.log");
+		out.println("Sample\tBlockStart\tBlockEnd\tAverage");
+		int N = 100000;
+		double blockStart = 0.5;
+		double blockEnd = 0.5;
+		int state = 0;
+		
+		for (int i = 0; i < N; i++) {
+			blockStart = Randomizer.nextDouble();
+			blockEnd = Randomizer.nextDouble();
+			if (blockEnd < blockStart) {
+				double tmp = blockEnd; blockEnd = blockStart; blockStart = tmp;
+			}
+
+			if (Randomizer.nextBoolean()) {
+				state = 1;
+			} else {
+				state = Randomizer.nextInt(2)*2;
+			}
+			out.println(i + "\t" + (state != 2 ? blockStart : blockEnd) + "\t" + (state != 0 ? blockEnd : blockStart)
+					+ "\t" + ((state != 2 ? blockStart : blockEnd)  + (state != 0 ? blockEnd : blockStart))/2.0);
+		}
+		out.close();
+		
+		out = new PrintStream("/tmp/BlockOperatorTest2.log");
+		out.println("Sample\tBlockStart\tBlockEnd\tAverage");
+		blockStart = 0.5;
+		blockEnd = 0.5;
+		for (int i = 0; i < N; i++) {
+			if (Randomizer.nextBoolean()) {
+				if (blockStart == blockStart) {
+					blockStart = Randomizer.nextDouble();
+					blockEnd = blockStart;
+				} else {
+//					if (Randomizer.nextDouble()>0.5) {
+//						blockStart = Randomizer.nextDouble() * blockEnd;
+//					} else {
+//						blockEnd = blockStart + Randomizer.nextDouble() * (1 - blockStart);
+//					}					
+					blockStart = Randomizer.nextDouble();
+					blockEnd = Randomizer.nextDouble();
+					if (blockEnd < blockStart) {
+						double tmp = blockEnd; blockEnd = blockStart; blockStart = tmp;
+					}
+				}
+			} else {
+				if (blockStart == blockStart) {
+					// switch from 1 to 2 infections
+//					switch (Randomizer.nextInt(2)) {
+//					case 0:
+//						blockStart = Randomizer.nextDouble() * blockEnd;
+//						break;
+//					case 1:
+//						blockEnd = blockStart + Randomizer.nextDouble() * (1 - blockStart);
+//						break;
+//					}					
+					blockStart = Randomizer.nextDouble();
+					blockEnd = Randomizer.nextDouble();
+					if (blockEnd < blockStart) {
+						double tmp = blockEnd; blockEnd = blockStart; blockStart = tmp;
+					}
+				} else {
+					// switch from 2 to 1 infection
+					switch (Randomizer.nextInt(2)) {
+					case 0:
+						blockStart = blockEnd;
+						break;
+					case 1:
+						blockEnd = blockStart;
+						break;
+					}					
+				}
+				
+			}
+			out.println(i + "\t" + blockStart + "\t" + blockEnd
+					+ "\t" + (blockStart + blockEnd)/2.0);
+		}
+		out.close();
+		
+		
+	}
 
 	public static void main(String[] args) throws IOException {
-		new BlockOperatorTest().test();
+		//new BlockOperatorTest().test();
+		//new BlockOperatorTest().test2();
+		new BlockOperatorTest().test3();
 	}
 
 }

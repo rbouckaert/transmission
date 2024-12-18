@@ -84,8 +84,29 @@ public class BlockOperator extends Operator {
 
 	@Override
 	public double proposal() {
+//		if (true)
+//			if (Randomizer.nextBoolean()) {
+//				int [] i = chooseInfectionToRemove();
+//				if (i == null) {
+//					return Double.NEGATIVE_INFINITY;
+//				}
+//				return removeInfection0(i);
+//			} else {
+//				int k = chooseBlockToInsert();
+//				return insertInfection0(k);
+//			}
+
+		
+		
 		if (Randomizer.nextBoolean()) {
 			int i = Randomizer.nextInt(blockStartFraction.getDimension());
+
+			int attempts = 0;
+			while (blockCount.getValue(i) == -1 && attempts < 100) {
+				i = Randomizer.nextInt(blockStartFraction.getDimension());
+				attempts++;
+			}
+				
 			// only move start and end fraction but not block count
 			switch (blockCount.getValue(i)) {
 			case -1:
@@ -98,14 +119,13 @@ public class BlockOperator extends Operator {
 				blockEndFraction.setValue(i, f);
 				break;
 			default:
-				// move one boundary only
-				if (Randomizer.nextBoolean()) {
-					f = lowerStart + Randomizer.nextDouble() * (Math.min(blockEndFraction.getValue(i), upperStart) - lowerStart);
-					blockStartFraction.setValue(i, f);
-				} else {
-					f = upperEnd - Randomizer.nextDouble() * (upperEnd - Math.max(blockStartFraction.getValue(i), lowerEnd));
-					blockEndFraction.setValue(i, 1-f);					
+				double blockStart = Randomizer.nextDouble();
+				double blockEnd = Randomizer.nextDouble();
+				if (blockEnd < blockStart) {
+					double tmp = blockEnd; blockEnd = blockStart; blockStart = tmp;
 				}
+				blockStartFraction.setValue(i, blockStart);
+				blockEndFraction.setValue(i, blockEnd);					
 			}
 			return 0;
 		}
@@ -113,13 +133,15 @@ public class BlockOperator extends Operator {
 		if (keepConstantCountInput.get()) {
 			int pre = blockCount.getValue(0);
 
-			int i = chooseInfectionToRemove();
+			int [] i = chooseInfectionToRemove();
 			double logHR = 0;
-			if (i != -1) {
+			if (i != null) {
 				logHR += removeInfection(i);
+			} else {
+				return Double.NEGATIVE_INFINITY;
 			}
-			i = chooseBlockToInsert();
-			logHR += insertInfection(i);
+			int k = chooseBlockToInsert();
+			logHR += insertInfection(k);
 			
 			int post = blockCount.getValue(0);
 			updateStats(pre, post);
@@ -127,14 +149,14 @@ public class BlockOperator extends Operator {
 			
 			return 0*logHR;
 		} else	if (Randomizer.nextBoolean()) {
-			int i = chooseInfectionToRemove();
-			if (i == -1) {
+			int [] i = chooseInfectionToRemove();
+			if (i == null) {
 				return Double.NEGATIVE_INFINITY;
 			}
 			return removeInfection(i);
 		} else {
-			int i = chooseBlockToInsert();
-			return insertInfection(i);
+			int k = chooseBlockToInsert();
+			return insertInfection(k);
 		}
 		
 	}
@@ -166,7 +188,8 @@ public class BlockOperator extends Operator {
 	
 	private int eligbleInfectionCount = 0;
 	
-	private int chooseInfectionToRemove() {
+	
+	private int [] calcEligbleInfectionCount() {
 		int [] colourAtBase = new int[tree.getNodeCount()];
 		int n = tree.getLeafNodeCount();
 		ColourProvider.getColour(tree.getRoot(), blockCount, n, colourAtBase);
@@ -177,14 +200,21 @@ public class BlockOperator extends Operator {
 				if (!(colourAtBase[i] < n && !tree.getNode(i).isRoot() && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
 					eligbleInfectionCount += 1;
 				}
-			} else {
-				eligbleInfectionCount += blockCount.getValue(i) + 1;
+			} else if (blockCount.getValue(i) > 0) {
+				eligbleInfectionCount += 2;
+//			} else {
+//				eligbleInfectionCount += blockCount.getValue(i) + 1;
 			}
 		}
+		return colourAtBase;
+	}
+	
+	private int[] chooseInfectionToRemove() {
+		int [] colourAtBase = calcEligbleInfectionCount();
+		int n = tree.getLeafNodeCount();
 		if (eligbleInfectionCount == 0) {
-			return -1;
+			return null;
 		}
-		
 		
 		int k = Randomizer.nextInt(eligbleInfectionCount);
 		for (int i = 0; i < blockCount.getDimension(); i++) {
@@ -192,17 +222,23 @@ public class BlockOperator extends Operator {
 				if (!(colourAtBase[i] < n && !tree.getNode(i).isRoot() && colourAtBase[tree.getNode(i).getParent().getNr()] < n)) {
 					k--;
 				}
-			} else {
-				k -= blockCount.getValue(i) + 1;
+			} else if (blockCount.getValue(i) > 0) {
+				k -= 2;
 			}
 			if (k < 0) {
-				return i;
+				return new int[] {i, k};
 			}
 		}
 		throw new RuntimeException("Programmer error: should not get here");
 	}
 	
 	private int chooseBlockToInsert() {
+//		{
+//			int i = Randomizer.nextInt(tree.getNodeCount()-1);
+//			if (true) return i;
+//		}
+		
+		
 		double length = 0;
 		for (Node node : tree.getNodesAsArray()) {
 			length += node.getLength();
@@ -227,53 +263,40 @@ public class BlockOperator extends Operator {
 			double f = Randomizer.nextDouble();
 			blockStartFraction.setValue(i, f);
 			blockEndFraction.setValue(i, f);
-			return 0;
+			break;
 			
 		case 0:
 			// add infection
 			blockCount.setValue(i, 1);
-
-			f = lowerStart + Randomizer.nextDouble() * (upperEnd - lowerStart);
-			if (f < blockStartFraction.getValue(i)) {
-				blockStartFraction.setValue(i, f);
-			} else {
-				blockEndFraction.setValue(i, f);				
-			}
-//			double mid = blockStartFraction.getValue(i);
-//			if (mid- f / 2.0 < 0 || mid + f / 2.0 > 1.0) {
-//				return Double.NEGATIVE_INFINITY;
-//			}
-//			blockStartFraction.setValue(i, mid - f / 2.0);
-//			blockEndFraction.setValue(i, mid + f / 2.0);
-			return 0;
 			
-//		case 1:
-//			// add infection
-//			blockCount.setValue(i, 2);
-//
-//			f = Randomizer.nextDouble();
-//			mid = (blockStartFraction.getValue(i) + blockEndFraction.getValue(i))/2.0;
-//			if (mid- f / 2.0 < 0 || mid + f / 2.0 > 1.0) {
-//				return Double.NEGATIVE_INFINITY;
-//			}
-//			blockStartFraction.setValue(i, mid - f / 2.0);
-//			blockEndFraction.setValue(i, mid + f / 2.0);				
-//			return Math.log(2.0);
+			double blockStart = Randomizer.nextDouble();
+			double blockEnd = Randomizer.nextDouble();
+			if (blockEnd < blockStart) {
+				double tmp = blockEnd; blockEnd = blockStart; blockStart = tmp;
+			}
+			blockStartFraction.setValue(i, blockStart);
+			blockEndFraction.setValue(i, blockEnd);					
+			break;
 		
 		default:
 			// add infection
 			blockCount.setValue(i, blockCount.getValue(i)+1);
-//			f = Randomizer.nextDouble();
-//			mid = (blockStartFraction.getValue(i) + blockEndFraction.getValue(i))/2.0;
-//			if (mid- f / 2.0 < 0 || mid + f / 2.0 > 1.0) {
-//				return Double.NEGATIVE_INFINITY;
-//			}
+			
 		}
-		return 0;
+	
+		calcEligbleInfectionCount();
+		double length = 0;
+		for (Node node : tree.getNodesAsArray()) {
+			length += node.getLength();
+		}
+		return Math.log(1.0/eligbleInfectionCount)
+			   - Math.log(tree.getNode(i).getLength() / length)
+				;
 		
-	}
+	} // insertInfection
 
-	private double removeInfection(int i) {
+	private double removeInfection(int [] infection) {
+		int i = infection[0];
 		switch (blockCount.getValue(i)) {
 		case -1:
 			// do nothing, should not get here
@@ -283,7 +306,6 @@ public class BlockOperator extends Operator {
 			// remove infection
 			blockCount.setValue(i, -1);
 			break;
-			//return Math.log(2.0);
 			
 		case 1:
 			// remove infection
@@ -292,21 +314,11 @@ public class BlockOperator extends Operator {
 				blockStartFraction.setValue(i, blockEndFraction.getValue(i));
 			} else {
 				blockEndFraction.setValue(i, blockStartFraction.getValue(i));
-				
 			}
-//			double mid = (blockStartFraction.getValue(i) + blockEndFraction.getValue(i))/2.0;
-//			blockStartFraction.setValue(i, mid);
-//			blockEndFraction.setValue(i, mid);
-//			return -Math.log(2.0);
 			break;
 		default:
 			// remove infection
 			blockCount.setValue(i, blockCount.getValue(i)-1);
-//			double f = Randomizer.nextDouble();
-//			mid = (blockStartFraction.getValue(i) + blockEndFraction.getValue(i))/2.0;
-//			if (mid- f / 2.0 < 0 || mid + f / 2.0 > 1.0) {
-//				return Double.NEGATIVE_INFINITY;
-//			}
 		}
 		
 		
@@ -314,11 +326,37 @@ public class BlockOperator extends Operator {
 		for (Node node : tree.getNodesAsArray()) {
 			length += node.getLength();
 		}
+		return Math.log(tree.getNode(i).getLength() / length) 
+				- Math.log(1.0/eligbleInfectionCount) 
+				;
+	} // removeInfection
 
-		return Math.log(tree.getNode(i).getLength() / length) - Math.log(1.0/eligbleInfectionCount);
-	}
 
-	
+	private double insertInfection0(int i) {
+			// add infection
+			blockCount.setValue(i, blockCount.getValue(i)+1);
+			double k = blockCount.getValue(i) + 2;
+			blockStartFraction.setValue(i, 1.0/k);
+			blockEndFraction.setValue(i, (k-1.0)/k);
+			return 0;
+	} // insertInfection
+
+	private double removeInfection0(int [] infection) {
+		int i = infection[0];
+
+		int bc = blockCount.getValue(i);
+		if (bc == -1) {
+			throw new RuntimeException("Programmer error");
+		}
+		// remove infection
+		blockCount.setValue(i, blockCount.getValue(i)-1);
+
+		double k = blockCount.getValue(i) + 2;
+		blockStartFraction.setValue(i, 1.0/k);
+		blockEndFraction.setValue(i, (k-1.0)/k);
+		return 0;
+	} // removeInfection
+
 	@Override
 	public List<StateNode> listStateNodes() {
         final List<StateNode> list = new ArrayList<>();

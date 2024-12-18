@@ -45,6 +45,7 @@ public class InfectionMover extends Operator {
         
 	@Override
 	public double proposal() {
+		double logHR = 0;
 		//System.out.print(blockCount.getValue());
 		int pre = blockCount.getValue(0);
 		
@@ -58,10 +59,42 @@ public class InfectionMover extends Operator {
 		
 		// get path between two leafs
 		List<Node> path = getPathExcludingMRCA(i, j);
+		double pathLength = 0;
+		for (Node node : path) {
+			pathLength += node.getLength();
+		}
+
+		
+		// 1. determine number of eligible infections 
+		int eligbleInfectionCount = 0;
+		for (Node node : path) {
+			int bc = blockCount.getValue(node.getNr());
+			if (bc == 0) {
+				eligbleInfectionCount += 1;
+			} else if (bc > 0) {
+				eligbleInfectionCount += 2;
+			}
+		}
+
+		// 2. pick one uniformly at random from eligble nodes
+		int k = Randomizer.nextInt(eligbleInfectionCount);
+		removeInfectionFromPath(path, k);
+		
+		logHR += Math.log(tree.getNode(k).getLength()/pathLength) - Math.log(1.0/eligbleInfectionCount);
 		
 		
-		removeInfectionFromPath(path);
-		insertInfectionToPath(path);
+		Node insertionNode = insertInfectionToPath(path, pathLength);
+		
+		eligbleInfectionCount = 0;
+		for (Node node : path) {
+			int bc = blockCount.getValue(node.getNr());
+			if (bc == 0) {
+				eligbleInfectionCount += 1;
+			} else if (bc > 0) {
+				eligbleInfectionCount += 2;
+			}
+		}
+		logHR += Math.log(1.0/eligbleInfectionCount) - Math.log(insertionNode.getLength()/pathLength);
 		
 
 		
@@ -80,7 +113,7 @@ public class InfectionMover extends Operator {
 
 		//System.out.print("=>"+blockCount.getValue());
 
-		return 0;
+		return logHR;
 	}
 	
 	
@@ -107,25 +140,12 @@ public class InfectionMover extends Operator {
 		}
 	}
 
-	private void removeInfectionFromPath(List<Node> path) {
-		// 1. determine number of eligible infections 
-		int eligbleInfectionCount = 0;
-		for (Node node : path) {
-			eligbleInfectionCount += blockCount.getValue(node.getNr()) + 1;
-//			int i = blockCount.getValue(node.getNr());
-//			if (i == 0) {
-//				eligbleInfectionCount += 1;
-//			} else if (i > 0) {
-//				eligbleInfectionCount += 2;
-//			}
-		}
-
-		// 2. pick one uniformly at random;
-		int k = Randomizer.nextInt(eligbleInfectionCount);
+	private void removeInfectionFromPath(List<Node> path, int k) {
+		//delta = -1;
 		for (Node node : path) {
 			int nodeNr = node.getNr();
 			int bc = blockCount.getValue(nodeNr) + 1;
-			k -= bc;
+			k -= bc > 2 ? 2 : bc;
 			if (k < 0) {
 				blockCount.setValue(node.getNr(), blockCount.getValue(node.getNr()) - 1);
 				if (blockCount.getValue(nodeNr) == -1) {
@@ -145,13 +165,22 @@ public class InfectionMover extends Operator {
 				// which is just as well as positions 1 and 2
 				//if (k == -1 || k == -2) { // blockCount.getValue(node.getNr()) - k == 1) {
 				//	if (Randomizer.nextBoolean()) {
-					if (k == -1) {
-						double newBlockStartFraction = blockStartFraction.getValue(nodeNr) + Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) -blockStartFraction.getValue(nodeNr));
-						blockStartFraction.setValue(nodeNr, newBlockStartFraction);
-					} else if (k == -2) {
-						double newBlockEndFraction = blockEndFraction.getValue(nodeNr) - Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) - blockStartFraction.getValue(nodeNr));
-						blockEndFraction.setValue(nodeNr, newBlockEndFraction);						
-					}
+				double blockStart = Randomizer.nextDouble();
+				double blockEnd = Randomizer.nextDouble();
+				if (blockEnd < blockStart) {
+					double tmp = blockEnd; blockEnd = blockStart; blockStart = tmp;
+				}
+				blockStartFraction.setValue(nodeNr, blockStart);
+				blockEndFraction.setValue(nodeNr, blockEnd);					
+//				if (k == -1) {
+//					delta = blockEndFraction.getValue(nodeNr);
+//					double newBlockStartFraction = Randomizer.nextDouble() * delta; //blockStartFraction.getValue(nodeNr) + Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) -blockStartFraction.getValue(nodeNr));
+//					blockStartFraction.setValue(nodeNr, newBlockStartFraction);
+//				} else if (k == -2) {
+//					delta = 1.0 - blockStartFraction.getValue(nodeNr);
+//					double newBlockEndFraction = 1.0 - Randomizer.nextDouble() * delta; //blockEndFraction.getValue(nodeNr) - Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) - blockStartFraction.getValue(nodeNr));
+//					blockEndFraction.setValue(nodeNr, newBlockEndFraction);						
+//				}
 				//}
 				return;
 			}
@@ -192,32 +221,50 @@ public class InfectionMover extends Operator {
 		throw new RuntimeException("Programmer error: should not get here");
 	}	
 
-	private void insertInfectionToPath(List<Node> path) {
+	private Node insertInfectionToPath(List<Node> path, double pathLength) {
 		// insert infection uniform randomly on path 
-		double length = 0;
-		for (Node n : path) {
-			length += n.getLength();
-		}
+
+		//delta = -1;
+//		int k = Randomizer.nextInt(path.size());
+//		Node node = path.get(k);
 		
-		double r = Randomizer.nextDouble() * length;
+		double r = Randomizer.nextDouble() * pathLength;
 		for (Node node : path) {
 			if (node.getLength() > r) {
 				int nodeNr = node.getNr();
 				blockCount.setValue(nodeNr, blockCount.getValue(nodeNr) + 1);
 				if (blockCount.getValue(nodeNr) == 0) {
-					blockStartFraction.setValue(nodeNr, r / node.getLength());
-					blockEndFraction.setValue(nodeNr, r / node.getLength());
-					return;
+					double f = Randomizer.nextDouble();
+					blockStartFraction.setValue(nodeNr, f);// / node.getLength());
+					blockEndFraction.setValue(nodeNr, f);// / node.getLength());
+					return node;
 				} else { // blockCount > 0
-					if (blockStartFraction.getValue(nodeNr) * node.getLength()> r) {
-						blockStartFraction.setValue(nodeNr, r / node.getLength());
-						return;
+					double blockStart = Randomizer.nextDouble();
+					double blockEnd = Randomizer.nextDouble();
+					if (blockEnd < blockStart) {
+						double tmp = blockEnd; blockEnd = blockStart; blockStart = tmp;
 					}
-					if (blockEndFraction.getValue(nodeNr) * node.getLength() < r) {
-						blockEndFraction.setValue(nodeNr, r / node.getLength());						
-					}
+					blockStartFraction.setValue(nodeNr, blockStart);
+					blockEndFraction.setValue(nodeNr, blockEnd);					
+//					if (Randomizer.nextBoolean()) {
+//						delta = blockEndFraction.getValue(nodeNr);
+//						double newBlockStartFraction = Randomizer.nextDouble() * delta; //blockStartFraction.getValue(nodeNr) + Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) -blockStartFraction.getValue(nodeNr));
+//						blockStartFraction.setValue(nodeNr, newBlockStartFraction);
+//					} else if (k == -2) {
+//						delta = 1.0 - blockStartFraction.getValue(nodeNr);
+//						double newBlockEndFraction = 1.0 - Randomizer.nextDouble() * delta; //blockEndFraction.getValue(nodeNr) - Randomizer.nextDouble() * (blockEndFraction.getValue(nodeNr) - blockStartFraction.getValue(nodeNr));
+//						blockEndFraction.setValue(nodeNr, newBlockEndFraction);						
+//					}
+
+//					if (blockStartFraction.getValue(nodeNr) * node.getLength()> r) {
+//						blockStartFraction.setValue(nodeNr, r / node.getLength());
+//						return;
+//					}
+//					if (blockEndFraction.getValue(nodeNr) * node.getLength() < r) {
+//						blockEndFraction.setValue(nodeNr, r / node.getLength());						
+//					}
 					// (blockStartFraction.getValue(nodeNr) < r && r < blockEndFraction.getValue(nodeNr))
-					return;
+					return node;
 				}
 			}
 			r = r - node.getLength();

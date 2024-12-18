@@ -172,6 +172,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	}
     	
     	logP += calcTransmissionLikelihood();
+    	if (Double.isInfinite(logP)) {
+    		logP = Double.NEGATIVE_INFINITY;
+    	}
     	return logP;
     }
     

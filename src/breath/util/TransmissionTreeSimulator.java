@@ -97,7 +97,7 @@ public class TransmissionTreeSimulator extends Runnable {
     			traceout.print("t" + format(i+1) + "\t");
     		}
     	}
-    	traceout.println("endTime\tTree.height\tTree.treeLength\torigin");
+    	traceout.println("endTime\tTree.height\tTree.treeLength\torigin\tlogP");
 		
     	
     	Map<Integer, Integer> taxonCounts = new HashMap<>();
@@ -106,8 +106,9 @@ public class TransmissionTreeSimulator extends Runnable {
     	long attempts = 0;
 		for (int i = 0; i < treeCountInput.get(); i++) {
 			int k;
+			double logP;
 			do {
-				runOnce(maxTaxonCount);
+				logP = runOnce(maxTaxonCount);
 				k = root.getAllLeafNodes().size();
 				if (!taxonCounts.containsKey(k)) {
 					taxonCounts.put(k, 0);
@@ -173,7 +174,7 @@ public class TransmissionTreeSimulator extends Runnable {
 	    		}
 			}
 			double height = (root.getHeight() - h);
-	    	traceout.println((-h) + "\t" + height + "\t" + length(root) + "\t" + (endTimeInput.get().getArrayValue()-h));
+	    	traceout.println((-h) + "\t" + height + "\t" + length(root) + "\t" + (endTimeInput.get().getArrayValue()-h) + "\t" + logP);
 			
 		}
 		System.err.println();
@@ -258,7 +259,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		return length;
 	}
 
-	private void runOnce(int maxTaxonCount) throws MathException {	
+	private double runOnce(int maxTaxonCount) throws MathException {	
 		double endTime = endTimeInput.get().getArrayValue();
 		double popSize = popSizeInput.get().getArrayValue();
 
@@ -286,20 +287,31 @@ public class TransmissionTreeSimulator extends Runnable {
 		colourMap = new HashMap<>();
 		colourMap.put(root, colour);
 		
+		double logP = 0;
 		while (nodes.size() > 0) {
 			// continue with last node
 			Node node = nodes.remove(nodes.size() - 1);
 
 			// 1. draw number of events
-			int n = poisson.inverseCumulativeProbability(Randomizer.nextDouble());
-
+			double r = Randomizer.nextDouble();
+			int n = poisson.inverseCumulativeProbability(r);
+			logP += Math.log(poisson.probability(n));
+					
 			// 2. draw whether colour will be sampled
 			boolean sample = (Randomizer.nextDouble() < sampleConstant);
-
+			if (sample) {
+				logP += Math.log(sampleConstant);
+			} else {
+				logP += Math.log(1.0 - sampleConstant);
+			}
+			
+			
 			// 3. simulate the time of sampling:
 			// Note: do not need multiply by sampleConstant
+			r = Randomizer.nextDouble();
 			double sampletime = !sample ? 0
-					: node.getHeight() - sampleIntensity.inverseCumulativeProbability(Randomizer.nextDouble());
+					: node.getHeight() - sampleIntensity.inverseCumulativeProbability(r);
+			logP += !sample ? 0 : sampleIntensity.logDensity(r);
 			if (sampletime < 0) {
 				sample = false;
 			}
@@ -308,8 +320,10 @@ public class TransmissionTreeSimulator extends Runnable {
 			double[] times = new double[n];
 			for (int i = 0; i < n; i++) {
 				// Note: do not need multiply by transmissionConstant
+				r = Randomizer.nextDouble();
 				times[i] = node.getHeight()
-						- transmissionIntensity.inverseCumulativeProbability(Randomizer.nextDouble());
+						- transmissionIntensity.inverseCumulativeProbability(r);
+				logP += !sample ? 0 : transmissionIntensity.logDensity(r);
 			}
 			Arrays.sort(times);
 			// remove times that are invalid: after study time, or after sample time (if any)
@@ -330,8 +344,8 @@ public class TransmissionTreeSimulator extends Runnable {
 					if (!quietInput.get()) {
 						System.err.print("x");
 					}
-					runOnce(maxTaxonCount);
-					return;
+					logP += runOnce(maxTaxonCount);
+					return logP;
 				}
 			}
 			// create internal (infection) nodes
@@ -346,14 +360,16 @@ public class TransmissionTreeSimulator extends Runnable {
 			
 			// 5. Sampling a within-host phylogeny
 			double currentHeight = sample ? sampletime : (n > 0 ? times[0] : 0);
-		
-			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get());
+			
+			double [] logPCoalescent = new double[1];
+			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get(), logPCoalescent);
+			logP += logPCoalescent[0];
 			if (fragment == null) {
 				if (!quietInput.get()) {
 					System.err.print("c");
 				}
-				runOnce(maxTaxonCount);
-				return;
+				logP += runOnce(maxTaxonCount);
+				return logP;
 			}
 			// connect to node
 			node.addChild(fragment);
@@ -374,6 +390,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		}
 		// remove nodes not included from tree
 		traverse(root, includedNodes);
+		return logP;
 	}
 
 	private String format(int i) {
@@ -387,7 +404,7 @@ public class TransmissionTreeSimulator extends Runnable {
 	}
 	
 	private Node simulateCoalescent(List<Node> current, ConstantPopulation popFun, double currentHeight,
-			double height, int maxAttemptCount) {
+			double height, int maxAttemptCount, double [] logPCoalescent) {
 		if (current.size() == 0) {
 			Node node =  new Node();
 			node.setHeight(currentHeight);
@@ -398,11 +415,12 @@ public class TransmissionTreeSimulator extends Runnable {
 		int attempt = 0;
 		do {
 			List<Node> currentCopy = new ArrayList<>(current);
-			fragment = simulateCoalescent(currentCopy, popFun, currentHeight, height);
+			fragment = simulateCoalescent(currentCopy, popFun, currentHeight, height, logPCoalescent);
 			if (fragment.size() == 1) {
 				return fragment.get(0);
 			}
 			attempt++;
+			logPCoalescent[0] = 0;
 		} while (attempt < maxAttemptCount);
 		Log.warning("Could not find a proper coalescent tree after " + maxAttemptCount + " attempts. "
 				+ "Consider decreasing the population size or increasing maxAttempts.");
@@ -529,7 +547,7 @@ public class TransmissionTreeSimulator extends Runnable {
 	}
 
 	public List<Node> simulateCoalescent(final List<Node> nodes, final PopulationFunction demographic,
-			double currentHeight, final double maxHeight) {
+			double currentHeight, final double maxHeight, double [] logPCoalescent) {
 		// If only one node, return it
 		// continuing results in an infinite loop
 		if (nodes.size() == 1)
@@ -563,6 +581,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		// simulate coalescent events
 		double nextCoalescentHeight = currentHeight
 				+ PopulationFunction.Utils.getSimulatedInterval(demographic, activeNodeCount, currentHeight);
+		logPCoalescent[0] += Math.log(demographic.getIntensity(nextCoalescentHeight - currentHeight));
 
 		// while (nextCoalescentHeight < maxHeight && (getNodeCount() > 1)) {
 		while (nextCoalescentHeight < maxHeight && (nodeList.size() > 1)) {
@@ -573,7 +592,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		            activeNodeCount += 1;
 		        }
 			} else {
-				currentHeight = coalesceTwoActiveNodes(currentHeight, nextCoalescentHeight, nodeList, activeNodeCount);
+				currentHeight = coalesceTwoActiveNodes(currentHeight, nextCoalescentHeight, nodeList, activeNodeCount, logPCoalescent);
 				activeNodeCount--;
 			}
 
@@ -606,12 +625,13 @@ public class TransmissionTreeSimulator extends Runnable {
      * @param height
      * @return
      */
-    private double coalesceTwoActiveNodes(final double minHeight, double height, List<Node> nodeList, int activeNodeCount){
+    private double coalesceTwoActiveNodes(final double minHeight, double height, List<Node> nodeList, int activeNodeCount, double[]logPCoalescent){
         final int node1 = Randomizer.nextInt(activeNodeCount);
         int node2 = node1;
         while (node2 == node1) {
             node2 = Randomizer.nextInt(activeNodeCount);
         }
+        logPCoalescent[0] += -Math.log(activeNodeCount * (activeNodeCount-1)/2);
 
         final Node left = nodeList.get(node1);
         final Node right = nodeList.get(node2);

@@ -27,11 +27,14 @@ import beast.base.evolution.tree.coalescent.ConstantPopulation;
 import beast.base.evolution.tree.coalescent.PopulationFunction;
 import beast.base.inference.Runnable;
 import beast.base.inference.parameter.IntegerParameter;
+import beast.base.inference.parameter.RealParameter;
 import beast.base.util.HeapSort;
 import beast.base.util.Randomizer;
 import beastfx.app.tools.Application;
 import beastfx.app.util.OutFile;
 import breath.distribution.ColourProvider;
+import breath.distribution.GammaHazardFunction;
+import breath.distribution.TransmissionTreeLikelihood;
 
 @Description("Simulates transmission tree with colouring and block counts")
 public class TransmissionTreeSimulator extends Runnable {
@@ -66,6 +69,8 @@ public class TransmissionTreeSimulator extends Runnable {
 
 	private Node root;
 	private Map<Node, Integer> colourMap;
+	private int nodeCount;
+	private double logP;
 	
 	@Override
 	public void initAndValidate() {
@@ -97,7 +102,7 @@ public class TransmissionTreeSimulator extends Runnable {
     			traceout.print("t" + format(i+1) + "\t");
     		}
     	}
-    	traceout.println("endTime\tTree.height\tTree.treeLength\torigin\tlogP");
+    	traceout.println("endTime\tTree.height\tTree.treeLength\torigin\tlogP\tlogP2");
 		
     	
     	Map<Integer, Integer> taxonCounts = new HashMap<>();
@@ -108,6 +113,7 @@ public class TransmissionTreeSimulator extends Runnable {
 			int k;
 			double logP;
 			do {
+				this.logP = 0;
 				logP = runOnce(maxTaxonCount);
 				k = root.getAllLeafNodes().size();
 				if (!taxonCounts.containsKey(k)) {
@@ -118,7 +124,9 @@ public class TransmissionTreeSimulator extends Runnable {
 				if (attempts % 100000 == 0) {
 					// reportAttempts(taxonCounts, );
 				}
-			} while (taxonCount > 0 && taxonCount != k);
+			} while (Double.isInfinite(logP) || taxonCount > 0 && taxonCount != k);
+
+			System.out.println(i+"\t" + nodeCount + "\t" + logP);
 			
 			// convert to binary tree
 			while (root.getChildCount() == 1) {
@@ -174,7 +182,8 @@ public class TransmissionTreeSimulator extends Runnable {
 	    		}
 			}
 			double height = (root.getHeight() - h);
-	    	traceout.println((-h) + "\t" + height + "\t" + length(root) + "\t" + (endTimeInput.get().getArrayValue()-h) + "\t" + logP);
+			double logP2 = calcLogP(newick, h);
+	    	traceout.println((-h) + "\t" + height + "\t" + length(root) + "\t" + (endTimeInput.get().getArrayValue()-h) + "\t" + logP + "\t" + logP2);
 			
 		}
 		System.err.println();
@@ -189,6 +198,63 @@ public class TransmissionTreeSimulator extends Runnable {
 		Log.warning("Done");
 	}
 		
+	private double calcLogP(String newick, double h) {
+		TreeParser tree = new TreeParser(newick);
+
+		int taxonCount = tree.getLeafNodeCount();
+		
+		IntegerParameter blockCount = new IntegerParameter();
+		RealParameter blockStart = new RealParameter();
+		RealParameter blockEnd = new RealParameter();
+		blockCount.initByName("dimension", taxonCount*2-2, "value", "-1", "lower", -1, "upper", 1000);
+		blockStart.initByName("dimension", taxonCount*2-2, "value", "0.5", "lower", 0.0, "upper", 1.0);
+		blockEnd.initByName(  "dimension", taxonCount*2-1, "value", "0.5", "lower", 0.0, "upper", 1.0);
+		
+		for (int j = 0; j < tree.getNodeCount(); j++) {
+			Node node = tree.getNode(j);
+			Object o = node.getMetaData("blockcount");
+			if (o != null) {
+				blockCount.setValue(j, (int)(double)o);
+			}
+			o = node.getMetaData("blockstart");
+			if (o != null) {
+				blockStart.setValue(j, (double)o);
+			}
+			o = node.getMetaData("blockend");
+			if (o != null) {
+				blockEnd.setValue(j, (double)o);
+			}
+		}
+		
+		
+		ConstantPopulation popFun = new ConstantPopulation();
+		popFun.initByName("popSize", popSizeInput.get().getArrayValue() + "");
+				
+		GammaHazardFunction transmissionHazard = new GammaHazardFunction();
+		transmissionHazard.initByName("shape", transmissionShapeInput.get().getArrayValue() + "", 
+				"rate", transmissionRateInput.get().getArrayValue() + "",
+				"C", transmissionConstantInput.get().getArrayValue() + "");
+		GammaHazardFunction sampleHazard = new GammaHazardFunction(); 
+		sampleHazard.initByName("shape", sampleShapeInput.get().getArrayValue() + "", 
+				"rate", sampleRateInput.get().getArrayValue() + "",
+				"C", sampleConstantInput.get().getArrayValue() + "");
+		
+		TransmissionTreeLikelihood tl = new TransmissionTreeLikelihood();
+		tl.initByName("tree", tree, 
+				"blockstart", blockStart,
+				"blockend", blockEnd,
+				"blockcount", blockCount,
+				"populationModel", popFun, 
+				"endTime", h-endTimeInput.get().getArrayValue() + "",
+				"origin", h + "",
+				"samplingHazard", sampleHazard,
+				"transmissionHazard", transmissionHazard
+				);
+		
+		double logP = tl.calculateLogP();
+		return logP;
+	}
+
 	private void reportAttempts(Map<Integer, Integer> taxonCounts, Map<Integer, Integer> infectionCounts) {
 		DecimalFormat f = new DecimalFormat("##.###");
 		Integer [] keys = taxonCounts.keySet().toArray(new Integer[] {});
@@ -287,7 +353,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		colourMap = new HashMap<>();
 		colourMap.put(root, colour);
 		
-		double logP = 0;
+		this.logP = 0;
 		while (nodes.size() > 0) {
 			// continue with last node
 			Node node = nodes.remove(nodes.size() - 1);
@@ -295,14 +361,14 @@ public class TransmissionTreeSimulator extends Runnable {
 			// 1. draw number of events
 			double r = Randomizer.nextDouble();
 			int n = poisson.inverseCumulativeProbability(r);
-			logP += Math.log(poisson.probability(n));
+			addToLogP("#events", Math.log(poisson.probability(n)));
 					
 			// 2. draw whether colour will be sampled
 			boolean sample = (Randomizer.nextDouble() < sampleConstant);
 			if (sample) {
-				logP += Math.log(sampleConstant);
+				addToLogP("SampleP", Math.log(sampleConstant));
 			} else {
-				logP += Math.log(1.0 - sampleConstant);
+				addToLogP("SampleP", Math.log(1.0 - sampleConstant));
 			}
 			
 			
@@ -311,7 +377,7 @@ public class TransmissionTreeSimulator extends Runnable {
 			r = Randomizer.nextDouble();
 			double sampletime = !sample ? 0
 					: node.getHeight() - sampleIntensity.inverseCumulativeProbability(r);
-			logP += !sample ? 0 : sampleIntensity.logDensity(r);
+			addToLogP("SampleTime", !sample ? 0 : sampleIntensity.logDensity(r));
 			if (sampletime < 0) {
 				sample = false;
 			}
@@ -323,7 +389,7 @@ public class TransmissionTreeSimulator extends Runnable {
 				r = Randomizer.nextDouble();
 				times[i] = node.getHeight()
 						- transmissionIntensity.inverseCumulativeProbability(r);
-				logP += !sample ? 0 : transmissionIntensity.logDensity(r);
+				addToLogP("TransTime", !sample ? 0 : transmissionIntensity.logDensity(r));
 			}
 			Arrays.sort(times);
 			// remove times that are invalid: after study time, or after sample time (if any)
@@ -344,7 +410,9 @@ public class TransmissionTreeSimulator extends Runnable {
 					if (!quietInput.get()) {
 						System.err.print("x");
 					}
-					logP += runOnce(maxTaxonCount);
+					logP = Double.NEGATIVE_INFINITY;
+					//runOnce(maxTaxonCount);
+					addToLogP("runOnce(too many taxa)", logP);
 					return logP;
 				}
 			}
@@ -363,12 +431,12 @@ public class TransmissionTreeSimulator extends Runnable {
 			
 			double [] logPCoalescent = new double[1];
 			Node fragment = simulateCoalescent(current, popFun, currentHeight, node.getHeight(), maxAttemptsInput.get(), logPCoalescent);
-			logP += logPCoalescent[0];
+			addToLogP("Coalescent:", logPCoalescent[0]);
 			if (fragment == null) {
 				if (!quietInput.get()) {
 					System.err.print("c");
 				}
-				logP += runOnce(maxTaxonCount);
+				addToLogP("runOnce2", runOnce(maxTaxonCount));
 				return logP;
 			}
 			// connect to node
@@ -390,7 +458,21 @@ public class TransmissionTreeSimulator extends Runnable {
 		}
 		// remove nodes not included from tree
 		traverse(root, includedNodes);
+		nodeCount = getNodeCount(root);
 		return logP;
+	}
+
+	private void addToLogP(String caller, double log) {
+		//System.err.println(caller + " " + log);
+		logP += log;
+	}
+
+	private int getNodeCount(Node node) {
+		int nodeCount = 1;
+		for (Node child : node.getChildren()) {
+			nodeCount += getNodeCount(child);
+		}
+		return nodeCount;
 	}
 
 	private String format(int i) {

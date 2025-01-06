@@ -34,7 +34,7 @@ import beastfx.app.tools.Application;
 import beastfx.app.util.OutFile;
 import breath.distribution.ColourProvider;
 import breath.distribution.GammaHazardFunction;
-import breath.distribution.TransmissionTreeLikelihood;
+import breath.test.TransmissionTreeLikelihood;
 
 @Description("Simulates transmission tree with colouring and block counts")
 public class TransmissionTreeSimulator extends Runnable {
@@ -66,6 +66,7 @@ public class TransmissionTreeSimulator extends Runnable {
 	final public Input<Integer> treeCountInput = new Input<>("treeCount", "generate treeCount number of trees", 1);
 	final public Input<Boolean> directOnlyInput = new Input<>("directOnly", "consider direct infections only, if false block counts are ignored", true);
 	final public Input<Boolean> quietInput = new Input<>("quiet", "suppress some screen output", false);
+	final public Input<Boolean> calcLogPInput = new Input<>("calcLogP", "calculate transmission likelihood for generated trees", false);
 
 	private Node root;
 	private Map<Node, Integer> colourMap;
@@ -102,7 +103,7 @@ public class TransmissionTreeSimulator extends Runnable {
     			traceout.print("t" + format(i+1) + "\t");
     		}
     	}
-    	traceout.println("endTime\tTree.height\tTree.treeLength\torigin\tlogP\tlogP2");
+    	traceout.println("endTime\tTree.height\tTree.treeLength\torigin\tlogP" + (calcLogPInput.get()? "\tlogP2" : ""));
 		
     	
     	Map<Integer, Integer> taxonCounts = new HashMap<>();
@@ -182,8 +183,9 @@ public class TransmissionTreeSimulator extends Runnable {
 	    		}
 			}
 			double height = (root.getHeight() - h);
-			double logP2 = calcLogP(newick, h);
-	    	traceout.println((-h) + "\t" + height + "\t" + length(root) + "\t" + (endTimeInput.get().getArrayValue()-h) + "\t" + logP + "\t" + logP2);
+			double logP2 = calcLogPInput.get() ? calcLogP(newick, h) : 0;
+	    	traceout.println((-h) + "\t" + height + "\t" + length(root) + "\t" + (endTimeInput.get().getArrayValue()-h) + "\t" + logP +
+	    			(calcLogPInput.get() ? "\t" + logP2 : "" ));
 			
 		}
 		System.err.println();
@@ -206,9 +208,9 @@ public class TransmissionTreeSimulator extends Runnable {
 		IntegerParameter blockCount = new IntegerParameter();
 		RealParameter blockStart = new RealParameter();
 		RealParameter blockEnd = new RealParameter();
-		blockCount.initByName("dimension", taxonCount*2-2, "value", "-1", "lower", -1, "upper", 1000);
+		blockCount.initByName("dimension", taxonCount*2-1, "value", "-1", "lower", -1, "upper", 1000);
 		blockStart.initByName("dimension", taxonCount*2-2, "value", "0.5", "lower", 0.0, "upper", 1.0);
-		blockEnd.initByName(  "dimension", taxonCount*2-1, "value", "0.5", "lower", 0.0, "upper", 1.0);
+		blockEnd.initByName(  "dimension", taxonCount*2-2, "value", "0.5", "lower", 0.0, "upper", 1.0);
 		
 		for (int j = 0; j < tree.getNodeCount(); j++) {
 			Node node = tree.getNode(j);
@@ -377,7 +379,7 @@ public class TransmissionTreeSimulator extends Runnable {
 			r = Randomizer.nextDouble();
 			double sampletime = !sample ? 0
 					: node.getHeight() - sampleIntensity.inverseCumulativeProbability(r);
-			addToLogP("SampleTime", !sample ? 0 : sampleIntensity.logDensity(r));
+			addToLogP("SampleTime", !sample ? 0 : sampleIntensity.logDensity(sampletime));
 			if (sampletime < 0) {
 				sample = false;
 			}
@@ -389,7 +391,7 @@ public class TransmissionTreeSimulator extends Runnable {
 				r = Randomizer.nextDouble();
 				times[i] = node.getHeight()
 						- transmissionIntensity.inverseCumulativeProbability(r);
-				addToLogP("TransTime", !sample ? 0 : transmissionIntensity.logDensity(r));
+				addToLogP("TransTime", !sample ? 0 : transmissionIntensity.logDensity(node.getHeight()-times[i]));
 			}
 			Arrays.sort(times);
 			// remove times that are invalid: after study time, or after sample time (if any)
@@ -412,7 +414,7 @@ public class TransmissionTreeSimulator extends Runnable {
 					}
 					logP = Double.NEGATIVE_INFINITY;
 					//runOnce(maxTaxonCount);
-					addToLogP("runOnce(too many taxa)", logP);
+					addToLogP("\nrunOnce(too many taxa)", logP);
 					return logP;
 				}
 			}
@@ -463,7 +465,7 @@ public class TransmissionTreeSimulator extends Runnable {
 	}
 
 	private void addToLogP(String caller, double log) {
-		//System.err.println(caller + " " + log);
+		System.err.println(caller + " " + log);
 		logP += log;
 	}
 

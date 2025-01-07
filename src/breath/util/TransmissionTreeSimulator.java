@@ -34,7 +34,7 @@ import beastfx.app.tools.Application;
 import beastfx.app.util.OutFile;
 import breath.distribution.ColourProvider;
 import breath.distribution.GammaHazardFunction;
-import breath.test.TransmissionTreeLikelihood;
+import breath.distribution.TransmissionTreeLikelihood;
 
 @Description("Simulates transmission tree with colouring and block counts")
 public class TransmissionTreeSimulator extends Runnable {
@@ -183,7 +183,8 @@ public class TransmissionTreeSimulator extends Runnable {
 	    		}
 			}
 			double height = (root.getHeight() - h);
-			double logP2 = calcLogPInput.get() ? calcLogP(newick, h) : 0;
+			double origin = endTimeInput.get().getArrayValue() - root.getHeight() + height;
+			double logP2 = calcLogPInput.get() ? calcLogP(newick, h, origin) : 0;
 	    	traceout.println((-h) + "\t" + height + "\t" + length(root) + "\t" + (endTimeInput.get().getArrayValue()-h) + "\t" + logP +
 	    			(calcLogPInput.get() ? "\t" + logP2 : "" ));
 			
@@ -200,7 +201,7 @@ public class TransmissionTreeSimulator extends Runnable {
 		Log.warning("Done");
 	}
 		
-	private double calcLogP(String newick, double h) {
+	private double calcLogP(String newick, double h, double origin) {
 		TreeParser tree = new TreeParser(newick);
 
 		int taxonCount = tree.getLeafNodeCount();
@@ -248,7 +249,7 @@ public class TransmissionTreeSimulator extends Runnable {
 				"blockcount", blockCount,
 				"populationModel", popFun, 
 				"endTime", h-endTimeInput.get().getArrayValue() + "",
-				"origin", h + "",
+				"origin", origin + "",
 				"samplingHazard", sampleHazard,
 				"transmissionHazard", transmissionHazard
 				);
@@ -379,7 +380,7 @@ public class TransmissionTreeSimulator extends Runnable {
 			r = Randomizer.nextDouble();
 			double sampletime = !sample ? 0
 					: node.getHeight() - sampleIntensity.inverseCumulativeProbability(r);
-			addToLogP("SampleTime", !sample ? 0 : sampleIntensity.logDensity(sampletime));
+			addToLogP("SampleTime", !sample ? 0 : sampleIntensity.logDensity(node.getHeight() - sampletime));
 			if (sampletime < 0) {
 				sample = false;
 			}
@@ -391,7 +392,7 @@ public class TransmissionTreeSimulator extends Runnable {
 				r = Randomizer.nextDouble();
 				times[i] = node.getHeight()
 						- transmissionIntensity.inverseCumulativeProbability(r);
-				addToLogP("TransTime", !sample ? 0 : transmissionIntensity.logDensity(node.getHeight()-times[i]));
+				addToLogP("TransTime", transmissionIntensity.logDensity(node.getHeight()-times[i]));
 			}
 			Arrays.sort(times);
 			// remove times that are invalid: after study time, or after sample time (if any)
@@ -465,7 +466,7 @@ public class TransmissionTreeSimulator extends Runnable {
 	}
 
 	private void addToLogP(String caller, double log) {
-		System.err.println(caller + " " + log);
+		// System.err.println(caller + " " + log);
 		logP += log;
 	}
 

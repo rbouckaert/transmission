@@ -105,43 +105,44 @@ public class InfectedByCoverageCalculator extends Runnable {
 		
 		for (int i = 0; i < trueTrace.getTrace(0).length - skipLogLinesInput.get(); i++) {
 			String filename = logFilePrefixInput.get().getPath() + i + ".log";
-			LogAnalyser trace = new LogAnalyser(filename, burnInPercentageInput.get(), true, false);
-			if (i % 10 == 0) {
-				Log.warning.print("|");
-			} else {
-				Log.warning.print(".");
-			}
-			
-			out.print(i + "\t");
-			int offset = 0;
-			if (tag != null) {
-				offset = trace.indexof(tag + ".1") - 1;
-			}
-			for (int j = 1; j <= n; j++) {
-				// get true source value
-				int trueSource = 0;
-				trueSource = (n + 1 + (int)(double)trueTrace.getTrace(trueOffset+j)[i + skipLogLinesInput.get()]) % n;
+			if (new File(filename).exists()) {
+				LogAnalyser trace = new LogAnalyser(filename, burnInPercentageInput.get(), true, false);
+				if (i % 10 == 0) {
+					Log.warning.print("|");
+				} else {
+					Log.warning.print(".");
+				}
 				
-				// collect info from trace
-	        	double [] infectedBy = new double[n+1];
-	        	Arrays.fill(infectedBy, 0);
-	        	Double [] currenttrace = trace.getTrace(offset + j);
-	        	for (Double d : currenttrace) {
-	        		if (d < -1 || d >= n) {
-	        			infectedBy[n]++;
-	        		} else {
-	        			infectedBy[(n+1+(int)(double)d) % n]++;
-	        		}
-	        	}
-	        	
-	        	// determine 95% coverage
-	        	int[] index = new int[n+1];
-	        	for (int k = 0; k <= n; k++) {
-	        		index[k] = k;
-	        	}
-	        	HeapSort.sort(infectedBy, index);
-
-	        	{
+				out.print(i + "\t");
+				int offset = 0;
+				if (tag != null) {
+					offset = trace.indexof(tag + ".1") - 1;
+				}
+				for (int j = 1; j <= n; j++) {
+					// get true source value
+					int trueSource = 0;
+					trueSource = (n + 1 + (int)(double)trueTrace.getTrace(trueOffset+j)[i + skipLogLinesInput.get()]) % n;
+					
+					// collect info from trace
+		        	double [] infectedBy = new double[n+1];
+		        	Arrays.fill(infectedBy, 0);
+		        	Double [] currenttrace = trace.getTrace(offset + j);
+		        	for (Double d : currenttrace) {
+		        		if (d < -1 || d >= n) {
+		        			infectedBy[n]++;
+		        		} else {
+		        			infectedBy[(n+1+(int)(double)d) % n]++;
+		        		}
+		        	}
+		        	
+		        	// determine 95% coverage
+		        	int[] index = new int[n+1];
+		        	for (int k = 0; k <= n; k++) {
+		        		index[k] = k;
+		        	}
+		        	HeapSort.sort(infectedBy, index);
+	
+		        	{
 //System.out.print(i*10+j + "\t");
 //int sum = 0;
 //for (int k = 0; k <= n; k++) {
@@ -149,44 +150,45 @@ public class InfectedByCoverageCalculator extends Runnable {
 //	System.out.print(infectedBy[index[k]] + "\t");
 //}
 //System.out.println(sum);
+				}
+	
+		        	// is true value in the 95% coverage set?
+		        	int threshold = (int)(currenttrace.length * coverageInput.get())/ 100;
+		        	int sum = 0;
+		        	int k = n;
+		        	boolean covered = false;
+		        	while (sum < threshold) {
+		        		if (index[k] == trueSource) {
+		        			covered = true;
+		        			break;
+		        		}
+		        		sum += infectedBy[index[k]];
+		        		k--;
+		        	}
+		        	
+		        	// update true vs estimated bins
+		        	for (int x = includeUnsampled ? 0 : 1; x < infectedBy.length; x++) {
+		        		if (infectedBy[x] > 0) {
+				        	int b = (int)(truebins.length*infectedBy[x]/currenttrace.length);
+				        	if (b >= truebins.length) {
+				        		b = truebins.length-1;
+				        	}
+				        	totals[b]++;
+		        		}
+		        	}
+		        	if (includeUnsampled || trueSource > 0) {
+		        		if (infectedBy[trueSource] > 0) {
+				        	int b = (int)(truebins.length*infectedBy[trueSource]/currenttrace.length);
+				        	if (b >= truebins.length) {
+				        		b = truebins.length-1;
+				        	}
+				        	truebins[b]++;
+		        		}
+		        	}
+					out.print((covered?1:0) + "\t");
+				}
+				out.println();
 			}
-
-	        	// is true value in the 95% coverage set?
-	        	int threshold = (int)(currenttrace.length * coverageInput.get())/ 100;
-	        	int sum = 0;
-	        	int k = n;
-	        	boolean covered = false;
-	        	while (sum < threshold) {
-	        		if (index[k] == trueSource) {
-	        			covered = true;
-	        			break;
-	        		}
-	        		sum += infectedBy[index[k]];
-	        		k--;
-	        	}
-	        	
-	        	// update true vs estimated bins
-	        	for (int x = includeUnsampled ? 0 : 1; x < infectedBy.length; x++) {
-	        		if (infectedBy[x] > 0) {
-			        	int b = (int)(truebins.length*infectedBy[x]/currenttrace.length);
-			        	if (b >= truebins.length) {
-			        		b = truebins.length-1;
-			        	}
-			        	totals[b]++;
-	        		}
-	        	}
-	        	if (includeUnsampled || trueSource > 0) {
-	        		if (infectedBy[trueSource] > 0) {
-			        	int b = (int)(truebins.length*infectedBy[trueSource]/currenttrace.length);
-			        	if (b >= truebins.length) {
-			        		b = truebins.length-1;
-			        	}
-			        	truebins[b]++;
-	        		}
-	        	}
-				out.print((covered?1:0) + "\t");
-			}
-			out.println();
 		}
 		
 		System.out.println();

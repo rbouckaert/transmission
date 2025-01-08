@@ -28,6 +28,7 @@ import beast.base.evolution.tree.coalescent.PopulationFunction;
 import beast.base.inference.Runnable;
 import beast.base.inference.parameter.IntegerParameter;
 import beast.base.inference.parameter.RealParameter;
+import beast.base.util.Binomial;
 import beast.base.util.HeapSort;
 import beast.base.util.Randomizer;
 import beastfx.app.tools.Application;
@@ -73,6 +74,9 @@ public class TransmissionTreeSimulator extends Runnable {
 	private int nodeCount;
 	private double logP;
 	
+	private final boolean debug = false;
+	private String newick0;
+	
 	@Override
 	public void initAndValidate() {
 	}
@@ -109,6 +113,9 @@ public class TransmissionTreeSimulator extends Runnable {
     	Map<Integer, Integer> taxonCounts = new HashMap<>();
     	Map<Integer, Integer> infectionCounts = new HashMap<>();
 		
+		PrintStream out0 = debug? new PrintStream("/tmp/out0.nwk") : null;
+
+    	
     	long attempts = 0;
 		for (int i = 0; i < treeCountInput.get(); i++) {
 			int k;
@@ -188,7 +195,15 @@ public class TransmissionTreeSimulator extends Runnable {
 	    	traceout.println((-h) + "\t" + height + "\t" + length(root) + "\t" + (endTimeInput.get().getArrayValue()-h) + "\t" + logP +
 	    			(calcLogPInput.get() ? "\t" + logP2 : "" ));
 			
+	    	if (debug && Math.abs(logP-logP2) > 0.01) {
+	    		out0.println(newick0);
+	    	}
+	    	
 		}
+		if (debug) {
+			out0.close();
+		}
+		
 		System.err.println();
 		reportAttempts(taxonCounts, infectionCounts);
 		
@@ -251,7 +266,8 @@ public class TransmissionTreeSimulator extends Runnable {
 				"endTime", h-endTimeInput.get().getArrayValue() + "",
 				"origin", origin + "",
 				"samplingHazard", sampleHazard,
-				"transmissionHazard", transmissionHazard
+				"transmissionHazard", transmissionHazard,
+				"includeCoalescent", true
 				);
 		
 		double logP = tl.calculateLogP();
@@ -459,6 +475,10 @@ public class TransmissionTreeSimulator extends Runnable {
 				node = node.getParent();
 			}
 		}
+		
+		if (debug) {
+			newick0 = root.toNewick();
+		}
 		// remove nodes not included from tree
 		traverse(root, includedNodes);
 		nodeCount = getNodeCount(root);
@@ -466,7 +486,7 @@ public class TransmissionTreeSimulator extends Runnable {
 	}
 
 	private void addToLogP(String caller, double log) {
-		// System.err.println(caller + " " + log);
+//		System.err.println(caller + " " + log);
 		logP += log;
 	}
 
@@ -666,7 +686,10 @@ public class TransmissionTreeSimulator extends Runnable {
 		// simulate coalescent events
 		double nextCoalescentHeight = currentHeight
 				+ PopulationFunction.Utils.getSimulatedInterval(demographic, activeNodeCount, currentHeight);
-		logPCoalescent[0] += Math.log(demographic.getIntensity(nextCoalescentHeight - currentHeight));
+        
+        double kChoose2 = Binomial.choose2(activeNodeCount);
+		double intervalArea = demographic.getIntegral(currentHeight, nextCoalescentHeight);
+		logPCoalescent[0] += -kChoose2 * intervalArea;
 
 		// while (nextCoalescentHeight < maxHeight && (getNodeCount() > 1)) {
 		while (nextCoalescentHeight < maxHeight && (nodeList.size() > 1)) {
@@ -681,7 +704,11 @@ public class TransmissionTreeSimulator extends Runnable {
 				activeNodeCount--;
 			}
 
-			// if (getNodeCount() > 1) {
+			
+            final double demographicAtCoalPoint = demographic.getPopSize(currentHeight);
+            logPCoalescent[0] -= Math.log(demographicAtCoalPoint);
+
+                // if (getNodeCount() > 1) {
 			if (nodeList.size() > 1) {
 				// get at least two tips
 				while (activeNodeCount < 2) {
@@ -696,6 +723,10 @@ public class TransmissionTreeSimulator extends Runnable {
 				// getActiveNodeCount(), currentHeight);
 				nextCoalescentHeight = currentHeight + PopulationFunction.Utils.getSimulatedInterval(demographic,
 						activeNodeCount, currentHeight);
+
+				kChoose2 = Binomial.choose2(activeNodeCount);
+				intervalArea = demographic.getIntegral(currentHeight, nextCoalescentHeight);
+				logPCoalescent[0] += -kChoose2 * intervalArea;
 			}
 		}
 

@@ -143,6 +143,26 @@ The BREATH tree likelihood has the following components:
 The two hazard functions probably need a bit of thought and knowledge to inform their parameters. For more details, we refer to the paper.
 
 
+### Some considerations fro setting up these parameters
+
+In general, you need to have good information about the sampling process and transmission process in order for BREATH to be useful.
+
+In particular, you need to have some idea about what proportion of the hosts is sampled (sample constant), how long after infection hosts are sampled on average (to set `sampleShape/sampleRate`) and the variance (to set `sampleShape/(sampleRate * sampleRate)`). For the transmission process, transmission constant is the number of hosts that on average are infected by a host, and the fraction `transmissionShape/transmissionRate` sets the mean time between a host getting infected and infecting other hosts and `transmissionShape/(transmissionRate * transmissionRate)` the variance.
+
+Not all combinations of parameters lead to sensible trees. It is quite possible that only single taxon trees are generated. Even when choosing sensible parameter combinations, one of the modes of the taxon count distribution will be near 1.
+
+* Choose `transmissionConstant` in [1, 4]. This sets the mean number of transmission events per host and determines the scale of the tree.
+* Choose `sampleConstant` in (0.5, 1), to sample enough cases that person-to-person transmission inference is likely to be a reasonable task.
+* Choose `transmissionShape/transmissionRate` to set the mean inter-infection time (ignoring sampling) .
+* Choose `sampleShape/sampleRate > transmissionShape/transmissionRate` so that sampling occurs at after the mean generation time, on average. Otherwise it seems likely that the transmission chains will die out quickly.
+* Choose `endTime` the approximate number of transmission generations. Keep in mind that if the mean time to sampling is considerably greater than the mean time to infection, and `transmissionConstant` is high, the number of infections could grow very large.
+* Choose `popSize` in such a way that the probability that lineages will coalesce in the required time is pretty high, for example `popSize < -transmissionRate/transmissionShape log(0.95)`.
+* After choosing the hazard function parameters, a quick sanity check is to plot the gamma distribution densities of the sampling and transmission hazard in the same plot. This plot shows how likely it is for a transmission to happen at a given time and how likely it is for a host to be sampled. For an exponentially growing process, the mean of the sampling hazard should be larger than that of the transmission hazard.
+
+Reducing `transmissionConstant` will make a big (nonlinear) difference.
+
+Changing `samplingConstant` will not make much difference to transmission or the size of the process (though it will to the number of sampled cases, in a linear way), because if sampling happens, it’s most likely to happen after the peak in transmission anyway.
+
 ### Hyperpriors
 
 The BREATH tree prior comes with four hyperpriors: block start, end and count and tranmission population size

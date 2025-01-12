@@ -81,7 +81,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
 	private boolean updateColours = true;
 	private boolean allowTransmissionsAfterSampling;
-	
+	private boolean initialCalculation = true;
 	
     @Override
     public void initAndValidate() {
@@ -115,6 +115,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	validator = new Validator(tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);    	
 
     	origin = originInput.get();
+    	
+    	
+    	
     	endTime = endTimeInput.get();
 		// lambda_tr = lambdaTrInput.get();
 		samplingHazard = samplingHazardInput.get();
@@ -149,6 +152,17 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     
 	@Override
     public double calculateLogP() {
+    	if (initialCalculation) {
+	    	double height = tree.getRoot().getHeight();
+	    	if (height > origin.getArrayValue()) {
+	    		Log.warning("\nWARNING: origin (" + origin.getArrayValue() +") is less than tree height (" + height +"). Consider increasing the origin start value to get the chain started.\n");
+	    	}
+	    	if (origin.getArrayValue() - height > 75) {
+	    		Log.warning("\nWARNING: origin (" + origin.getArrayValue() +") is more than 75 over tree height (" + height +"). Consider decreasing the origin start value to prevent numerical issues.\n");
+	    	}
+    	}
+    	initialCalculation = false;
+    	
     	logP = 0;
     	
     	if (!calcColourAtBase()) {

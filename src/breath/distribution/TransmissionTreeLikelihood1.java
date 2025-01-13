@@ -2,12 +2,19 @@ package breath.distribution;
 
 
 
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.commons.math.MathException;
+import org.apache.commons.math.special.Gamma;
+import org.apache.commons.math3.util.FastMath;
+
+import beast.base.core.Citation;
 import beast.base.core.Description;
+import beast.base.core.Function;
 import beast.base.core.Input;
 import beast.base.core.Input.Validate;
 import beast.base.core.Log;
@@ -23,6 +30,9 @@ import beast.base.inference.parameter.RealParameter;
 import beast.base.util.Binomial;
 
 @Description("Likelihood of a transmission tree")
+@Citation(value="Caroline Colijn, Matthew David Hall, Remco Bouckaert.\n"
+		+ "Taking a BREATH (Bayesian Reconstruction and Evolutionary Analysis of Transmission Histories) to simultaneously infer phylogenetic and transmission trees for partially sampled outbreaks.\n"
+		+ "BioRxiv, 2024", year=2024, DOI="10.1101/2024.07.11.603095)")
 public class TransmissionTreeLikelihood1 extends TreeDistribution {
     final public Input<RealParameter> blockStartFractionInput = new Input<>("blockstart", "start of block in fraction of branch length", Validate.REQUIRED);
     final public Input<RealParameter> blockEndFractionInput = new Input<>("blockend", "end of block in fraction of branch length", Validate.REQUIRED);
@@ -30,15 +40,18 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
 //    final public Input<IntegerParameter> colourInput = new Input<>("colour", "colour of the base of the branch", Validate.REQUIRED);
     final public Input<PopulationFunction> popSizeInput = new Input<>("populationModel", "A population size model", Validate.REQUIRED);
 
+    final public Input<Function> originInput = new Input<>("origin", "time at which the study start above the root of tree. Assumed to be at root if not specified");
     final public Input<RealParameter> endTimeInput = new Input<>("endTime", "time at which the study finished", Validate.REQUIRED);
-    final public Input<RealParameter> lambdaTrInput = new Input<>("lambda", "lambda parameter of Poisson process", Validate.REQUIRED);
+    //final public Input<RealParameter> lambdaTrInput = new Input<>("lambda", "lambda parameter of Poisson process", Validate.REQUIRED);
     
-    final public Input<HazardFunction> samplingHazardInput = new Input<>("samplingHazard", "determines the hazard of being sampled", Validate.REQUIRED);
-    final public Input<HazardFunction> transmissionHazardInput = new Input<>("transmissionHazard", "determines the hazard of transmitting an infection", Validate.REQUIRED);
+    final public Input<GammaHazardFunction> samplingHazardInput = new Input<>("samplingHazard", "determines the hazard of being sampled", Validate.REQUIRED);
+    final public Input<GammaHazardFunction> transmissionHazardInput = new Input<>("transmissionHazard", "determines the hazard of transmitting an infection", Validate.REQUIRED);
     
     final public Input<Boolean> colourOnlyInput = new Input<>("colourOnly", "flag for debugging that calculates colour at base only, but does not contribute to posterior otherwise", false);
     final public Input<Boolean> includeCoalescentInput = new Input<>("includeCoalescent", "flag for debugging that includes contribution from coalescent to posterior if true", true);
     
+    final public Input<Boolean> allowTransmissionsAfterSamplingInput = new Input<>("allowTransmissionsAfterSampling", "flag to indicate sampling does not affect the probability of onwards transmissions. "
+    		+ "If false, no onwards transmissions are allowed (not clear how this affects the unknown unknowns though).", true);
     
     
     
@@ -49,16 +62,26 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
     private int [] colourAtBase;
     private PopulationFunction popSizeFunction;
     private Validator validator;
+    private Function origin;
     
     // hazard functions for sampling and transmission respectively
 
 	private RealParameter endTime; // end time of study
-    private RealParameter lambda_tr; // mean rate for Poisson process 
-	private HazardFunction samplingHazard;
-	private HazardFunction transmissionHazard;
+    //private RealParameter lambda_tr; // mean rate for Poisson process 
+	private GammaHazardFunction samplingHazard;
+	private GammaHazardFunction transmissionHazard;
+
+	private double Cs;
+	private double Ctr;
+	private double p0;
+	private double phi;
+	private double rho;
+	private double atr;
+	private double btr;
 
 	private boolean updateColours = true;
-	
+	private boolean allowTransmissionsAfterSampling;
+	private boolean initialCalculation = true;
 	
     @Override
     public void initAndValidate() {
@@ -66,7 +89,7 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
     	if (tree == null) {
     		tree = treeIntervalsInput.get().treeInput.get();
     	}
-
+    	
     	int n = tree.getNodeCount();
     	blockStartFraction = blockStartFractionInput.get();
     	blockEndFraction = blockEndFractionInput.get();
@@ -91,10 +114,24 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
     	
     	validator = new Validator(tree, colourAtBase, blockCount, blockStartFraction, blockEndFraction);    	
 
+    	origin = originInput.get();
+    	
+    	
+    	
     	endTime = endTimeInput.get();
-		lambda_tr = lambdaTrInput.get();
+		// lambda_tr = lambdaTrInput.get();
 		samplingHazard = samplingHazardInput.get();
 		transmissionHazard = transmissionHazardInput.get();
+
+		Cs = samplingHazard.constantInput.get().getArrayValue();
+    	Ctr = transmissionHazard.constantInput.get().getArrayValue();
+		p0 = getp0(Cs, Ctr, 0.1);
+		phi = getPhi(Cs, Ctr, p0);
+		rho = getRho(phi);
+		atr = transmissionHazard.shapeInput.get().getArrayValue();
+		btr = transmissionHazard.getRate();
+		
+		allowTransmissionsAfterSampling = allowTransmissionsAfterSamplingInput.get();
     }
     
     private void sanityCheck(RealParameter blockFraction, int n, String paramName) {
@@ -115,6 +152,17 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
     
 	@Override
     public double calculateLogP() {
+    	if (initialCalculation) {
+	    	double height = tree.getRoot().getHeight();
+	    	if (height > origin.getArrayValue()) {
+	    		Log.warning("\nWARNING: origin (" + origin.getArrayValue() +") is less than tree height (" + height +"). Consider increasing the origin start value to get the chain started.\n");
+	    	}
+	    	if (origin.getArrayValue() - height > 75) {
+	    		Log.warning("\nWARNING: origin (" + origin.getArrayValue() +") is more than 75 over tree height (" + height +"). Consider decreasing the origin start value to prevent numerical issues.\n");
+	    	}
+    	}
+    	initialCalculation = false;
+    	
     	logP = 0;
     	
     	if (!calcColourAtBase()) {
@@ -138,6 +186,9 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
     	}
     	
     	logP += calcTransmissionLikelihood();
+    	if (Double.isInfinite(logP)) {
+    		logP = Double.NEGATIVE_INFINITY;
+    	}
     	return logP;
     }
     
@@ -161,18 +212,38 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
     		segments = collectSegments();
     	}
 
+    	if (origin != null) {
+    		if (origin.getArrayValue() < tree.getRoot().getHeight()) {
+    			return Double.NEGATIVE_INFINITY;
+    		}
+    	}
+    	
 //System.err.println("\n#contribution of sampled cases");
 		// contribution of sampled cases
     	for (int i = 0; i < n; i++) {
 //System.err.println("#node " + (i+1));
-
+			double logP1 = 0;
     		// contribution of not being sampled
     		SegmentIntervalList intervals = segments.get(i);
     		double start = intervals.birthTime;
     		double end = intervals.times.get(0);
-    		logP += logh_s(start, end) + logS_s(start, end);
+    		logP1 += logh_s(start, end) + logS_s(start, end);
 			// contribution of causing infections
-    		logP +=  logS_tr(start, end); // further contribution below
+    		if (allowTransmissionsAfterSampling) {
+    			logP1 +=  logS_tr(start, d); // further contribution below
+    		} else {
+    			logP1 +=  logS_tr(start, end); // further contribution below
+    		}
+    		logP1 -= logGetIndivCondition(p0, start, d);
+    		if (Double.isInfinite(logP1) && logP1 > 0) {
+    			System.err.println("Numerical instability encountered: ");
+    			System.err.println(start + " " + d + " " + end + " " + p0);
+    			System.err.println(logS_tr(start, d));
+    			System.err.println(logS_tr(start, end));
+    			System.err.println(logGetIndivCondition(p0, start, d));
+    		}
+// System.err.println("#node " + (i+1) + " " + logP1);
+			logP += logP1;
     	}
 
 //System.err.println("\n#transmissions from sampled cases");
@@ -183,11 +254,11 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
     		int parentColour = colourAtBase[parent];
     		if (baseColour != parentColour && parentColour < n) {
 //System.err.println("#node " + (i+1));
-
     			double tInf0 = segments.get(parentColour).birthTime;
     			Node node = nodes[i];
     			double tInf1 = node.getHeight() + node.getLength() * blockEndFraction.getArrayValue(node.getNr());
-    			logP += logh_tr(tInf0, tInf1);
+    			double logP1 = logh_tr(tInf0, tInf1); 
+    			logP += logP1;
     		}
     	}
     	
@@ -201,9 +272,12 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
         		SegmentIntervalList intervals = segments.get(i);
         		if (intervals != null) {
         			double start = intervals.birthTime;
-        			logP += logS_s(start, d);
+        			Double logP1 = logS_s(start, d);
         			// contribution of causing infections
         			logP += logS_tr(start, d); // further contribution below
+            		logP -= logGetIndivCondition(p0, start, d);
+            		
+            		logP += logP1;
         		}
     		}
     	}
@@ -220,7 +294,8 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
     			double tInf0 = segments.get(parentColour).birthTime;
     			Node node = nodes[i];
     			double tInf1 = node.getHeight() + node.getLength() * blockEndFraction.getArrayValue(node.getNr());
-    			logP += logh_tr(tInf0, tInf1);
+    			double logP1 = logh_tr(tInf0, tInf1);
+    			logP += logP1;
     		}
     	}
     	
@@ -228,37 +303,14 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
     	// contribution of cases in blocks
     	for (int i = 0; i < tree.getNodeCount() - 1; i++) {
     		if (blockCount.getValue(i) > 0) {
-    			double logPBlock = 0;
-                
-//    			System.err.println("#node " + (i+1));
-    			// contribution of not being sampled
     			double branchlength = nodes[i].getLength();
     			double start = nodes[i].getHeight() + branchlength * blockStartFraction.getValue(i);
     			double end   = nodes[i].getHeight() + branchlength * blockEndFraction.getValue(i);
     			int blocks = blockCount.getValue(i);
     			
-    			
-    			// TODO verify that the +1 and *2 are correct
-    			double delta = (end - start) / blocks;
-    			double t = end;
-    			for (int j = 0; j < blocks; j++) {
-    				logPBlock += logS_s(t, d);
-    				t = t - delta;
-    			}
-    			
-    			// contribution of causing infections Poisson model with rate lambda_tr
-    			double tau = end - start;
-//    			PoissonDistribution p = new PoissonDistributionImpl(lambda_tr.getValue() * tau);
-//    			logPBlock += Math.log(p.probability(blocks));
-    			
-    			logPBlock += blocks * (Math.log(lambda_tr.getValue() * tau));
-    			for (int j = 2; j <= blocks; j++) {
-    				logPBlock -= Math.log(j);
-    			}
-    			logPBlock += -lambda_tr.getValue() * tau;
-    			
-    			logPBlock -= Math.log(1.0 - Math.exp(-lambda_tr.getValue() * tau));
-    			
+    			double logPBlock = getLogBlockLike(end - start, blocks, end - d);
+                
+//    			System.err.println("#node " + (i+1) + " " + logPBlock);
 //    			System.err.println((tree.getRoot().getHeight() - end) + " - " + (tree.getRoot().getHeight() - start) + " = " + tau + " logPBlock=" + logPBlock);    			
     			
     			logP += logPBlock;
@@ -532,6 +584,11 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
 			}
 		}
 		
+		// set origin in segment at root
+		int colour = colourAtBase[tree.getNodeCount()-1];
+		((SegmentIntervalList) segments.get(colour)).birthTime =
+				origin != null ? origin.getArrayValue() : tree.getRoot().getHeight(); 
+		
 		for (IntervalList intervals : segments) {
 			if (intervals != null) {
 				((SegmentIntervalList)intervals).calculateIntervals();
@@ -642,6 +699,106 @@ public class TransmissionTreeLikelihood1 extends TreeDistribution {
 	protected boolean requiresRecalculation() {
 		updateColours = true;
 		return true;
+	}
+
+	
+	
+	// recall newton's method: x_n+1 = x_n - f(x_n)/f'(x_n) to find a root of f 
+	// here f = x- (1-C)*exp(lambda(x-1)) and f' is 1- (1-C)*lambda*exp(lambda(x-1))
+	final static int  maxsteps = 1000;
+	final static double tol=1e-6; 
+    private int n=0; 
+    
+	private double f(double x, double Cs, double Ctr) {
+    	return x - (1-Cs)*FastMath.exp(Ctr*(x-1));
+    } 
+    
+	private double fprime(double x, double Cs, double Ctr) {
+    	return 1 - (1-Cs)*Ctr*Math.exp(Ctr*(x-1));
+    }
+	
+	public double getp0(double Cs, double Ctr, double x0) {
+	    n=0; 
+	    double f = f(x0, Cs, Ctr);
+		while(Math.abs(f) > tol && n < maxsteps) {
+			//x0 = x0 - f(x0, Cs, Ctr) / fprime(x0, Cs, Ctr); // Newton's method formula
+			double tmp = (1-Cs)*FastMath.exp(Ctr*(x0-1));
+			x0 = x0 -(x0-tmp)/(1-tmp*Ctr);
+			f = f(x0, Cs, Ctr);
+			n=n+1;
+		}
+		if(n < maxsteps) {
+		    return x0;
+		}
+		throw new RuntimeException("The p0 algorithm did not converge after " + n + " iterations");
+	}
+
+	public double logGetIndivCondition(double p0, double t, double d) {
+	    final double TT = 1 - FastMath.exp(logS_tr(t, d)*(1-p0) + logS_s(t, d));
+	    if (TT == 0) {
+	    	// something is wrong -- make sure the likelihood becomes NEGATIVE_INFINITY by returning POSITIVE_INFINITY
+	    	return Double.POSITIVE_INFINITY;
+	    }
+	    final double logIndivCond = FastMath.log(TT);
+//	    System.err.println("logGetIndivCondition(" +p0+"," + (t - d)+") = " + logIndivCond);
+	    return logIndivCond;
+	}	
+
+	
+	// recall p0 can be obtained with getp0(Cs,Ctr) 
+
+	private double getPhi(double Cs,double Ctr,double p0) { 
+	    return(1 - p0*(1+ Ctr*(1-p0)/(1-Cs)));
+	}
+
+	private double getRho(double phi) { 
+	    return (1 - FastMath.exp(logS_tr(100, 0)*phi + logS_s(100, 0)));
+	}
+
+	final static double tol2=1e-7;
+	final static int maxn = 1000000;
+	private double getBlockCondition(double p0, double rho, double atr,double btr, double Yr) {
+	    double Z =0;// # init for the sum 
+	    int n=1;  
+	    double term = 1; // initialize the term at something > tol 
+	    while ((term > tol2) & (n < maxn)) {
+	        term = FastMath.pow(1.0 - rho, n) * pgamma(Yr, n * atr, btr);
+	        Z = Z+term;
+	        n=n+1;
+	    }
+//	    if (output==TRUE) {
+//	        cat("Approximate sum:", Z, "\n")
+//	        cat("Number of terms used:", n, "\n") 
+//	        } 
+	    return Z; 
+	} 	
+	
+	private double getLogBlockLike(double tblock, int n, double Yr) {
+	    double blockLike = (1-FastMath.pow(rho,n)) * dgamma(tblock, n*atr, btr) / getBlockCondition(p0,rho, atr, btr, Yr);
+	    double logBlockLike = FastMath.log(blockLike);
+//	    System.err.println("blockLike(" +tblock+"," + n +"," + Yr+") = " + blockLike);
+	    return logBlockLike;
+	}
+	
+	// gives the density
+	double dgamma(double x, double alpha, double rate) {
+		if (x < 0) {
+			throw new IllegalArgumentException("x should be non-negative");
+		}
+		return FastMath.pow(x * rate, alpha - 1) * rate * FastMath.exp(-x * rate) / FastMath.exp(Gamma.logGamma(alpha));
+	}
+	
+	//  gives the cumulative distribution function
+	double pgamma(double x, double shape, double rate) {
+		if (x <= 0) {
+			return 0;
+		}
+		try {
+			return Gamma.regularizedGammaP(shape, x * rate);
+		} catch (MathException e) {
+			e.printStackTrace();
+			return 0;
+		}	
 	}
 	
 }

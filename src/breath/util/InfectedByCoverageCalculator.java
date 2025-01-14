@@ -89,6 +89,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 		int binCount = binCountInput.get();
 		int [] truebins = new int [binCount];
 		int [] totals = new int [truebins.length];
+		double [] probsPerBin = new double [truebins.length];
 		boolean includeUnsampled = includeUnsampledInput.get();
 		
 		int trueOffset = 0;
@@ -173,6 +174,7 @@ public class InfectedByCoverageCalculator extends Runnable {
 				        	if (b >= truebins.length) {
 				        		b = truebins.length-1;
 				        	}
+				        	probsPerBin[b] += infectedBy[x]/currenttrace.length;
 				        	totals[b]++;
 		        		}
 		        	}
@@ -192,10 +194,23 @@ public class InfectedByCoverageCalculator extends Runnable {
 		}
 		
 		System.out.println();
+		System.out.print("totals: ");
 		System.out.println(Arrays.toString(totals));
+		System.out.print("true: ");
 		System.out.println(Arrays.toString(truebins));
+		System.out.print("Observed_probs: ");
     	for (int x = 0; x < truebins.length; x++) {
     		System.out.print((double)truebins[x]/totals[x]);
+    		if (x < truebins.length-1) {
+    			System.out.print(", ");
+    		}
+    	}    	
+    	for (int x = 0; x < truebins.length; x++) {
+    		probsPerBin[x] /= totals[x];
+    	}
+		System.out.print("\nExpected_probs: ");
+    	for (int x = 0; x < truebins.length; x++) {
+    		System.out.print(probsPerBin[x]);
     		if (x < truebins.length-1) {
     			System.out.print(", ");
     		}

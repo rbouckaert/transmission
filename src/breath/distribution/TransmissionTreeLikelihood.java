@@ -67,7 +67,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     // hazard functions for sampling and transmission respectively
 
 	private RealParameter endTime; // end time of study
-    //private RealParameter lambda_tr; // mean rate for Poisson process 
+    private double lambda; 
 	private GammaHazardFunction samplingHazard;
 	private GammaHazardFunction transmissionHazard;
 
@@ -125,16 +125,37 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
 		Cs = samplingHazard.constantInput.get().getArrayValue();
     	Ctr = transmissionHazard.constantInput.get().getArrayValue();
-		p0 = getp0(Cs, Ctr, 0.1);
-		phi = getPhi(Cs, Ctr, p0);
-		rho = getRho(phi);
 		atr = transmissionHazard.shapeInput.get().getArrayValue();
 		btr = transmissionHazard.getRate();
+				
+		double f = getRetainedFrac(50000);
+		lambda = (Cs*f*Ctr + (1-Cs)*Ctr) ;
+		
+		p0 = getp0(Cs, lambda, 0.1);
+		phi = getPhi(Cs, lambda, p0);
+		rho = getRho(phi);
 		
 		allowTransmissionsAfterSampling = allowTransmissionsAfterSamplingInput.get();
     }
     
-    private void sanityCheck(RealParameter blockFraction, int n, String paramName) {
+    private double getRetainedFrac(int numSamps) {
+    	double f = 0;
+    	for (int i = 0; i < numSamps; i++) {
+    		double tInf;
+			try {
+				tInf = transmissionHazard.simulate();
+	    		double tSam = samplingHazard.simulate();
+	    		if ( tInf < tSam) {
+	    			f++;
+	    		}
+			} catch (MathException e) {
+				e.printStackTrace();
+			}
+    	}
+		return f / numSamps;
+	}
+
+	private void sanityCheck(RealParameter blockFraction, int n, String paramName) {
     	if (blockFraction.getDimension() != n) {
     		blockFraction.setDimension(n);
     		Log.warning("WARNING: Setting dimension of "  + paramName + " parameter " + blockFraction.getID() + " to " + n);
@@ -709,22 +730,22 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	final static double tol=1e-6; 
     private int n=0; 
     
-	private double f(double x, double Cs, double Ctr) {
-    	return x - (1-Cs)*FastMath.exp(Ctr*(x-1));
+	private double f(double x, double Cs, double lambda) {
+    	return x - (1-Cs)*FastMath.exp(lambda*(x-1));
     } 
     
-	private double fprime(double x, double Cs, double Ctr) {
-    	return 1 - (1-Cs)*Ctr*Math.exp(Ctr*(x-1));
-    }
+//	private double fprime(double x, double Cs, double Ctr) {
+//    	return 1 - (1-Cs)*Ctr*Math.exp(Ctr*(x-1));
+//    }
 	
-	public double getp0(double Cs, double Ctr, double x0) {
+	public double getp0(double Cs, double lambda, double x0) {
 	    n=0; 
-	    double f = f(x0, Cs, Ctr);
+	    double f = f(x0, Cs, lambda);
 		while(Math.abs(f) > tol && n < maxsteps) {
 			//x0 = x0 - f(x0, Cs, Ctr) / fprime(x0, Cs, Ctr); // Newton's method formula
-			double tmp = (1-Cs)*FastMath.exp(Ctr*(x0-1));
-			x0 = x0 -(x0-tmp)/(1-tmp*Ctr);
-			f = f(x0, Cs, Ctr);
+			double tmp = (1-Cs)*FastMath.exp(lambda*(x0-1));
+			x0 = x0 -(x0-tmp)/(1-tmp*lambda);
+			f = f(x0, Cs, lambda);
 			n=n+1;
 		}
 		if(n < maxsteps) {
@@ -747,8 +768,8 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	
 	// recall p0 can be obtained with getp0(Cs,Ctr) 
 
-	private double getPhi(double Cs,double Ctr,double p0) { 
-	    return(1 - p0*(1+ Ctr*(1-p0)/(1-Cs)));
+	private double getPhi(double Cs,double lambda,double p0) { 
+	    return(1 - p0*(1+ lambda*(1-p0)/(1-Cs)));
 	}
 
 	private double getRho(double phi) { 

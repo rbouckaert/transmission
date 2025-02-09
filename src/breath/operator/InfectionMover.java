@@ -78,9 +78,9 @@ public class InfectionMover extends Operator {
 
 		// 2. pick one uniformly at random from eligble nodes
 		int k = Randomizer.nextInt(eligbleInfectionCount);
-		removeInfectionFromPath(path, k);
+		Node nodeWithInfectionRemoved = removeInfectionFromPath(path, k);
 		
-		logHR += Math.log(tree.getNode(k).getLength()/pathLength) - Math.log(1.0/eligbleInfectionCount);
+		logHR += Math.log(nodeWithInfectionRemoved.getLength()/pathLength) - Math.log(1.0/eligbleInfectionCount);
 		
 		
 		Node insertionNode = insertInfectionToPath(path, pathLength);
@@ -140,7 +140,7 @@ public class InfectionMover extends Operator {
 		}
 	}
 
-	private void removeInfectionFromPath(List<Node> path, int k) {
+	private Node removeInfectionFromPath(List<Node> path, int k) {
 		//delta = -1;
 		for (Node node : path) {
 			int nodeNr = node.getNr();
@@ -149,7 +149,7 @@ public class InfectionMover extends Operator {
 			if (k < 0) {
 				blockCount.setValue(node.getNr(), blockCount.getValue(node.getNr()) - 1);
 				if (blockCount.getValue(nodeNr) == -1) {
-					return;
+					return node;
 				}
 				if (blockCount.getValue(nodeNr) == 0) {
 					if (Randomizer.nextBoolean()) {
@@ -158,7 +158,7 @@ public class InfectionMover extends Operator {
 						blockEndFraction.setValue(nodeNr, blockStartFraction.getValue(nodeNr));
 						
 					}
-					return;
+					return node;
 				}
 				
 				// shrink the block if it is on a boundary
@@ -182,7 +182,7 @@ public class InfectionMover extends Operator {
 //					blockEndFraction.setValue(nodeNr, newBlockEndFraction);						
 //				}
 				//}
-				return;
+				return node;
 			}
 			
 //			if (bc == 0) {

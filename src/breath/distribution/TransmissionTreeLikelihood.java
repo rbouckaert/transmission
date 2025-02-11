@@ -843,6 +843,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	double logP = 0;
     	int n = tree.getLeafNodeCount();
     	Node [] nodes = tree.getNodesAsArray();
+    	calcColourAtBase();
     	segments = collectSegments();
 
     	if (origin != null) {
@@ -898,6 +899,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	double logP = 0;
     	int n = tree.getLeafNodeCount();
     	Node [] nodes = tree.getNodesAsArray();
+    	calcColourAtBase();
     	segments = collectSegments();
 
     	if (origin != null) {
@@ -945,6 +947,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	double logP = 0;
     	int n = tree.getLeafNodeCount();
     	Node [] nodes = tree.getNodesAsArray();
+    	calcColourAtBase();
     	segments = collectSegments();
 
     	if (origin != null) {

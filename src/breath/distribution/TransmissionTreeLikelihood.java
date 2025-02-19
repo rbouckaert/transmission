@@ -49,6 +49,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     
     final public Input<Boolean> colourOnlyInput = new Input<>("colourOnly", "flag for debugging that calculates colour at base only, but does not contribute to posterior otherwise", false);
     final public Input<Boolean> includeCoalescentInput = new Input<>("includeCoalescent", "flag for debugging that includes contribution from coalescent to posterior if true", true);
+    final public Input<Boolean> conditionOnInfectionTimeInput = new Input<>("conditionOnInfectionTime", "flag whether to condition the coalescent for subtrees on infection time. "
+    		+ "If true, population size is assumed to be constant within a host. "
+    		+ "If false, any population function can be used.", true);
     
     final public Input<Boolean> allowTransmissionsAfterSamplingInput = new Input<>("allowTransmissionsAfterSampling", "flag to indicate sampling does not affect the probability of onwards transmissions. "
     		+ "If false, no onwards transmissions are allowed (not clear how this affects the unknown unknowns though).", true);
@@ -84,6 +87,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 	private boolean updateColours = true;
 	private boolean allowTransmissionsAfterSampling;
 	private boolean initialCalculation = true;
+	private boolean conditionOnInfectionTime = true;
 	
     @Override
     public void initAndValidate() {
@@ -138,6 +142,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 		rho = getRho(phi);
 		
 		allowTransmissionsAfterSampling = allowTransmissionsAfterSamplingInput.get();
+		conditionOnInfectionTime = conditionOnInfectionTimeInput.get();
     }
     
     private double getRetainedFrac(int numSamps) {
@@ -200,6 +205,11 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     	initialCalculation = false;
     	
     	logP = 0;
+    	
+    	if (origin.getArrayValue() < tree.getRoot().getHeight()) {
+    		logP = Double.NEGATIVE_INFINITY;
+    		return logP;
+    	}
     	
     	if (!calcColourAtBase()) {
     		logP = Double.NEGATIVE_INFINITY;
@@ -383,9 +393,13 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 
     public double calculateCoalescent() {
 		double logP = 0;
-		for (IntervalList intervals : segments) {
+		for (SegmentIntervalList intervals : segments) {
 			if (intervals != null) {
-				logP += calculateCoalescent(intervals, 0.0);
+				if (conditionOnInfectionTime) {
+					logP += calculateCoalescent(intervals, 0.0);
+				} else {
+					logP += calculateCoalescentUnconditioned(intervals, 0.0);					
+				}
 			}
 		}
 		return logP;
@@ -394,9 +408,13 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     public List<Double> calculateCoalescents() {
 		segments = collectSegments();
 		List<Double> logP = new ArrayList<>();
-		for (IntervalList intervals : segments) {
+		for (SegmentIntervalList intervals : segments) {
 			if (intervals != null) {
-				logP.add(calculateCoalescent(intervals, 0.0));
+				if (conditionOnInfectionTime) {
+					logP.add(calculateCoalescent(intervals, 0.0));
+				} else {
+					logP.add(calculateCoalescentUnconditioned(intervals, 0.0));					
+				}
 			}
 		}
 		return logP;
@@ -635,7 +653,12 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 		return segments;
 	}
 
-	private double calculateCoalescent(IntervalList intervals, double threshold) {
+	/**
+	 * Calculate contribution of coalescent NOT conditioned on infection time being before all coalescent events
+	 * DOES NOT assume constant population size inside a host
+	 */
+	private double calculateCoalescentUnconditioned(SegmentIntervalList intervals, double threshold) {
+	//private double calculateCoalescent(SegmentIntervalList intervals, double threshold) {
         double logL = 0.0;
 
         double startTime = 0.0;
@@ -675,6 +698,63 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
                 }
             }
             startTime = finishTime;
+        }
+
+        return logL;
+  	}
+
+	/**
+	 * Calculate contribution of coalescent conditioned on infection time being before all coalescent events
+	 * Assumes constant population size inside a host
+	 */
+	private double calculateCoalescent(SegmentIntervalList intervals, double threshold) {
+        double logL = 0.0;
+
+        double t0 = intervals.times.get(0);
+        final int n = intervals.getIntervalCount();
+        
+        double tmax = intervals.birthTime;
+        double N = popSizeFunction.getPopSize(0);
+        for (int i = 0; i < n; i++) {
+
+            final double duration = intervals.getInterval(i);
+            final double t = t0 + duration;
+
+            final int k = intervals.getLineageCount(i);
+            
+            if (t - 1e-6 > tmax) { // sanity check for debugging
+            	throw new RuntimeException("Programmer error: finish of interval > time of infection");
+            }
+
+            if (k > 1 && duration > 0) {
+                final double rate = k*(k-1)/(2.0*N);
+                
+	            switch (intervals.getIntervalType(i)) {
+	            case COALESCENT:
+	            	// logL += log(rate*exp(-rate*duration)) 
+	            	//       = -rate*duration + log(rate)
+	                logL += -rate * duration + Math.log(rate);
+	                // logL -= log(1-exp(-rate*(tmax-t0)))
+	                logL -= Math.log(1.0 - Math.exp(-rate * (tmax - t0)));
+	            break;
+	            case SAMPLE:
+	            	// t0 = start of interval
+	            	// tmax = time of infection
+	            	// t = end of interval
+	            	// logL += log(exp(-rate*(t-t0) - exp(-rate*(tmax-t0)))
+	            	//       = log(exp(-rate*(t-t0) - exp(-rate*(tmax-t + t - t0)))
+	            	//       = log(exp(-rate*(t-t0) - exp(-rate*(tmax-t)) * exp(-rate*(t-t0)))
+	            	//       = log(exp(-rate*(t-t0) * (1 - exp(-rate*(tmax-t)))
+	            	//       = -rate*(t-t0) + log(1 - exp(-rate*(tmax-t)))
+	                logL += -rate * duration + Math.log(1.0 - Math.exp(-rate * (tmax - t)));
+	                // logL -= log(1-exp(-rate*(tmax-t0)))
+	                logL -= Math.log(1.0-Math.exp(-rate * (tmax - t0)));
+	            break;
+	            default:
+	            	throw new RuntimeException("Don't know how to process " + intervals.getIntervalType(i));
+	            }
+            }
+            t0 = t;
         }
 
         return logL;

@@ -55,8 +55,9 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     
     final public Input<Boolean> allowTransmissionsAfterSamplingInput = new Input<>("allowTransmissionsAfterSampling", "flag to indicate sampling does not affect the probability of onwards transmissions. "
     		+ "If false, no onwards transmissions are allowed (not clear how this affects the unknown unknowns though).", true);
-    
-    
+
+    final public Input<Double> branchLengthThresholdInput = new Input<>("branchLengthThreshold", "minimal branch length for which penalty applies (to prevent very samll branch lengths)", 0.0);
+     
     
     private Tree tree;
     private RealParameter blockStartFraction;
@@ -66,6 +67,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     private PopulationFunction popSizeFunction;
     private Validator validator;
     private Function origin;
+    private double branchLengthThreshold;
     
     // hazard functions for sampling and transmission respectively
 
@@ -143,6 +145,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 		
 		allowTransmissionsAfterSampling = allowTransmissionsAfterSamplingInput.get();
 		conditionOnInfectionTime = conditionOnInfectionTimeInput.get();
+		branchLengthThreshold = branchLengthThresholdInput.get();
     }
     
     private double getRetainedFrac(int numSamps) {
@@ -221,6 +224,14 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     		return logP;
     	}
 
+    	if (branchLengthThreshold > 0) {
+    		for (Node node : tree.getNodesAsArray()) {
+    			if (node.getLength() < branchLengthThreshold && !node.isRoot()) {
+    				logP += -10000;
+    			}
+    		}
+    	}
+    	
     	if (colourOnlyInput.get()) {
     		return logP;
     	}
@@ -228,7 +239,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
 		segments = collectSegments();
 
 		if (includeCoalescentInput.get()) {
-    		logP = calculateCoalescent();
+    		logP += calculateCoalescent();
     	}
     	
     	logP += calcTransmissionLikelihood();
@@ -288,7 +299,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     			System.err.println(logS_tr(start, end));
     			System.err.println(logGetIndivCondition(p0, start, d));
     		}
-// System.err.println("#node " + (i+1) + " " + logP1);
+//System.err.println("#node " + (i+1) + " " + logP1);
 			logP += logP1;
     	}
 

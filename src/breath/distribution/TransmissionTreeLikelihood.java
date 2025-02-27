@@ -56,7 +56,7 @@ public class TransmissionTreeLikelihood extends TreeDistribution {
     final public Input<Boolean> allowTransmissionsAfterSamplingInput = new Input<>("allowTransmissionsAfterSampling", "flag to indicate sampling does not affect the probability of onwards transmissions. "
     		+ "If false, no onwards transmissions are allowed (not clear how this affects the unknown unknowns though).", true);
 
-    final public Input<Double> branchLengthThresholdInput = new Input<>("branchLengthThreshold", "minimal branch length for which penalty applies (to prevent very samll branch lengths)", 0.0);
+    final public Input<Double> branchLengthThresholdInput = new Input<>("branchLengthThreshold", "minimal branch length for which penalty applies (to prevent very samll branch lengths)", 1e-4);
      
     
     private Tree tree;
